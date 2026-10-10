@@ -282,14 +282,35 @@
         </div>
 
         <div class="dialogue-lines-list" id="dialogue-lines">
-          <!-- Preloaded starter dialogue -->
+          <!-- Preloaded starter dialogue with multiple engine support -->
           <div class="dialogue-line-card" data-idx="0">
             <div class="line-meta">
               <div class="speaker-pill speaker-host">Host</div>
               <select class="line-voice-select">
-                <option value="af_heart" selected>Kokoro: Heart (US)</option>
-                <option value="en_US-lessac-medium">Piper: Lessac (US)</option>
-                <option value="en-US-JennyNeural">Edge: Jenny (US)</option>
+                <optgroup label="Kokoro-82M (Ultra-Fast)">
+                  <option value="af_heart" data-engine="kokoro" selected>Kokoro: Heart (US Female)</option>
+                  <option value="am_adam" data-engine="kokoro">Kokoro: Adam (US Male)</option>
+                </optgroup>
+                <optgroup label="Piper TTS (Real-Time Edge)">
+                  <option value="en_US-lessac-medium" data-engine="piper">Piper: Lessac (US Female)</option>
+                  <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US Male)</option>
+                </optgroup>
+                <optgroup label="Edge Neural (Multilingual)">
+                  <option value="en-US-JennyNeural" data-engine="edge">Edge: Jenny (US Female)</option>
+                </optgroup>
+                <optgroup label="F5-TTS (Flow-Matching Diffusion)">
+                  <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow (US)</option>
+                  <option value="f5_deep_resonant" data-engine="f5">F5-TTS: Deep Resonance (US)</option>
+                </optgroup>
+                <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
+                  <option value="xtts_female_narrator" data-engine="xtts">XTTS-v2: Studio Clone (Female)</option>
+                </optgroup>
+                <optgroup label="ChatTTS (Conversational Prosody)">
+                  <option value="chattts_seed_2222" data-engine="chattts">ChatTTS: Conversational Female</option>
+                </optgroup>
+                <optgroup label="Zonos-v2 (Expressive Mamba)">
+                  <option value="zonos_expressive_dramatic" data-engine="zonos">Zonos: Dramatic Expressive</option>
+                </optgroup>
               </select>
             </div>
             <textarea class="line-text">Welcome back everyone. Today we are looking at self-hosted open-source speech synthesis running entirely inside Docker.</textarea>
@@ -300,12 +321,33 @@
             <div class="line-meta">
               <div class="speaker-pill speaker-guest">Guest</div>
               <select class="line-voice-select">
-                <option value="am_adam" selected>Kokoro: Adam (US)</option>
-                <option value="en_US-ryan-high">Piper: Ryan (US)</option>
-                <option value="en-US-ChristopherNeural">Edge: Christopher (US)</option>
+                <optgroup label="F5-TTS (Flow-Matching Diffusion)">
+                  <option value="f5_deep_resonant" data-engine="f5" selected>F5-TTS: Deep Resonance (US)</option>
+                  <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow (US)</option>
+                </optgroup>
+                <optgroup label="Kokoro-82M (Ultra-Fast)">
+                  <option value="am_adam" data-engine="kokoro">Kokoro: Adam (US Male)</option>
+                  <option value="af_heart" data-engine="kokoro">Kokoro: Heart (US Female)</option>
+                </optgroup>
+                <optgroup label="Piper TTS (Real-Time Edge)">
+                  <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US Male)</option>
+                  <option value="en_US-lessac-medium" data-engine="piper">Piper: Lessac (US Female)</option>
+                </optgroup>
+                <optgroup label="Edge Neural (Multilingual)">
+                  <option value="en-US-ChristopherNeural" data-engine="edge">Edge: Christopher (US Male)</option>
+                </optgroup>
+                <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
+                  <option value="xtts_male_broadcaster" data-engine="xtts">XTTS-v2: Studio Clone (Male)</option>
+                </optgroup>
+                <optgroup label="ChatTTS (Conversational Prosody)">
+                  <option value="chattts_seed_7869" data-engine="chattts">ChatTTS: Conversational Male</option>
+                </optgroup>
+                <optgroup label="Zonos-v2 (Expressive Mamba)">
+                  <option value="zonos_whisper_calm" data-engine="zonos">Zonos: Calm Whisper</option>
+                </optgroup>
               </select>
             </div>
-            <textarea class="line-text">Thanks for having me! What is remarkable is the speed: models like Kokoro-82M generate audio in under 50 milliseconds without needing a dedicated GPU.</textarea>
+            <textarea class="line-text">Thanks for having me! What is remarkable is the flexibility: you can mix diffusion models like F5-TTS, low-latency ONNX models like Kokoro, and edge models like Piper in a single episode.</textarea>
             <button class="line-remove-btn" title="Delete Line">&times;</button>
           </div>
 
@@ -313,9 +355,29 @@
             <div class="line-meta">
               <div class="speaker-pill speaker-host">Host</div>
               <select class="line-voice-select">
-                <option value="af_heart" selected>Kokoro: Heart (US)</option>
-                <option value="en_US-lessac-medium">Piper: Lessac (US)</option>
-                <option value="en-US-JennyNeural">Edge: Jenny (US)</option>
+                <optgroup label="Kokoro-82M (Ultra-Fast)">
+                  <option value="af_heart" data-engine="kokoro" selected>Kokoro: Heart (US Female)</option>
+                  <option value="am_adam" data-engine="kokoro">Kokoro: Adam (US Male)</option>
+                </optgroup>
+                <optgroup label="Piper TTS (Real-Time Edge)">
+                  <option value="en_US-lessac-medium" data-engine="piper">Piper: Lessac (US Female)</option>
+                  <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US Male)</option>
+                </optgroup>
+                <optgroup label="Edge Neural (Multilingual)">
+                  <option value="en-US-JennyNeural" data-engine="edge">Edge: Jenny (US Female)</option>
+                </optgroup>
+                <optgroup label="F5-TTS (Flow-Matching Diffusion)">
+                  <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow (US)</option>
+                </optgroup>
+                <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
+                  <option value="xtts_female_narrator" data-engine="xtts">XTTS-v2: Studio Clone (Female)</option>
+                </optgroup>
+                <optgroup label="ChatTTS (Conversational Prosody)">
+                  <option value="chattts_seed_2222" data-engine="chattts">ChatTTS: Conversational Female</option>
+                </optgroup>
+                <optgroup label="Zonos-v2 (Expressive Mamba)">
+                  <option value="zonos_expressive_dramatic" data-engine="zonos">Zonos: Dramatic Expressive</option>
+                </optgroup>
               </select>
             </div>
             <textarea class="line-text">And because it exposes an OpenAI-compatible speech endpoint, any chatbot or AI agent can switch over effortlessly!</textarea>

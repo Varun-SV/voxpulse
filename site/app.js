@@ -72,7 +72,18 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeSampleKey = "kokoro";
   let isPlaying = false;
   let waveAnimId = null;
-  let sampleAudio = new Audio();
+  const sampleAudio = new Audio();
+  sampleAudio.crossOrigin = "anonymous";
+
+  // Web Audio Context & Analyser
+  let audioCtx = null;
+  let analyser = null;
+  let sourceNode = null;
+  let isAudioHooked = false;
+
+  const barCount = 48;
+  const barHeights = new Float32Array(barCount);
+  const targetHeights = new Float32Array(barCount);
 
   const sampleTabs = document.querySelectorAll(".sample-tab");
   const sampleQuote = document.getElementById("sample-quote");
@@ -85,6 +96,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const samplePauseIcon = document.getElementById("sample-pause-icon");
   const canvas = document.getElementById("landing-waveform");
   const ctx = canvas ? canvas.getContext("2d") : null;
+
+  function initWebAudio() {
+    if (!audioCtx) {
+      const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtxClass) {
+        audioCtx = new AudioCtxClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+    if (audioCtx && !isAudioHooked && sampleAudio) {
+      try {
+        sourceNode = audioCtx.createMediaElementSource(sampleAudio);
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.72;
+        sourceNode.connect(analyser);
+        analyser.connect(audioCtx.destination);
+        isAudioHooked = true;
+      } catch (e) {
+        console.warn("createMediaElementSource notice:", e);
+      }
+    }
+  }
 
   sampleAudio.addEventListener("ended", () => {
     stopSample();
@@ -126,6 +162,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = SAMPLES[activeSampleKey];
     if (!data || !data.audioUrl) return;
 
+    initWebAudio();
+
     isPlaying = true;
     samplePlayIcon.style.display = "none";
     samplePauseIcon.style.display = "block";
@@ -137,7 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     sampleAudio.play().then(() => {
-      startActiveWaveform();
+      startVisualizer();
     }).catch(err => {
       console.warn("Audio playback error:", err);
       stopSample();
@@ -153,7 +191,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (samplePlayIcon) samplePlayIcon.style.display = "block";
     if (samplePauseIcon) samplePauseIcon.style.display = "none";
     if (btnPlaySampleText) btnPlaySampleText.textContent = "Play Audio Sample";
-    stopActiveWaveform();
+    
+    // Draw resting waveform
+    drawIdleWaveform();
   }
 
   // Waveform Visualizer
@@ -164,13 +204,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const isDark = htmlEl.getAttribute("data-theme") === "dark";
     ctx.clearRect(0, 0, w, h);
 
-    const barCount = 48;
     const barW = 8;
     const gap = (w - (barCount * barW)) / (barCount - 1);
 
     for (let i = 0; i < barCount; i++) {
       const x = i * (barW + gap);
-      const amp = Math.sin(i * 0.3) * 12 + 18;
+      // Gentle resting curve
+      const amp = Math.sin(i * 0.28) * 10 + 16;
+      barHeights[i] = amp;
       const y = (h - amp) / 2;
 
       ctx.fillStyle = isDark ? "#38342e" : "#e5dfd5";
@@ -180,30 +221,108 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  let waveTick = 0;
-  function startActiveWaveform() {
-    if (!ctx || !canvas) return;
+  function startVisualizer() {
+    if (waveAnimId) cancelAnimationFrame(waveAnimId);
 
     function render() {
-      waveTick += 0.22;
+      if (!ctx || !canvas) return;
       const w = canvas.width;
       const h = canvas.height;
+      const isDark = htmlEl.getAttribute("data-theme") === "dark";
       ctx.clearRect(0, 0, w, h);
 
-      const barCount = 48;
       const barW = 8;
       const gap = (w - (barCount * barW)) / (barCount - 1);
 
+      if (isPlaying && analyser) {
+        const bufferLength = analyser.frequencyBinCount;
+        const freqData = new Uint8Array(bufferLength);
+        const timeData = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(freqData);
+        analyser.getByteTimeDomainData(timeData);
+
+        // 1. Compute dynamic speech RMS volume envelope from time-domain
+        let sumSq = 0;
+        for (let j = 0; j < bufferLength; j++) {
+          const norm = (timeData[j] - 128) / 128;
+          sumSq += norm * norm;
+        }
+        const rms = Math.sqrt(sumSq / bufferLength); // speech envelope: ~0.02 (silence) to 0.35 (strong vowels)
+        const speechEnvelope = Math.min(1.0, rms * 4.2);
+
+        // Check overall frequency energy
+        let totalEnergy = 0;
+        for (let j = 0; j < 64; j++) totalEnergy += freqData[j];
+
+        if (totalEnergy > 10) {
+          // Real-time audio frequency stream is active
+          const sampleRate = audioCtx ? audioCtx.sampleRate : 44100;
+          const binHz = sampleRate / analyser.fftSize;
+
+          // Perceptual logarithmic mapping across the human speech spectrum (80 Hz to ~7,500 Hz)
+          const minFreq = 85;
+          const maxFreq = 7200;
+
+          for (let i = 0; i < barCount; i++) {
+            const ratio = i / (barCount - 1);
+            const centerFreq = minFreq * Math.pow(maxFreq / minFreq, ratio);
+            const centerBin = Math.round(centerFreq / binHz);
+
+            // Cluster average around center bin to capture formants & consonants smoothly
+            const windowSpan = Math.max(1, Math.round(centerBin * 0.12));
+            let bandSum = 0;
+            let bandBins = 0;
+            const startBin = Math.max(0, centerBin - windowSpan);
+            const endBin = Math.min(bufferLength - 1, centerBin + windowSpan);
+            for (let b = startBin; b <= endBin; b++) {
+              bandSum += freqData[b];
+              bandBins++;
+            }
+            const rawMag = bandBins > 0 ? (bandSum / bandBins) / 255 : 0;
+
+            // Formant tilt compensation: natural speech rolls off ~-6dB/octave.
+            // Boost upper formants and fricatives so bars pulse across the entire width.
+            const tiltBoost = 1.0 + Math.pow(ratio, 1.15) * 2.4;
+
+            // Blend frequency magnitude with overall voice presence
+            const combined = (rawMag * 0.72 + speechEnvelope * 0.28) * tiltBoost;
+            const target = Math.max(8, Math.min(h * 0.88, combined * h * 0.95));
+            targetHeights[i] = target;
+          }
+        } else {
+          // Playback-synchronized procedural fallback if MediaElementAudioSource is blocked
+          const curTime = sampleAudio ? sampleAudio.currentTime : 0;
+          const speechPulse = Math.sin(curTime * 5.2) * 0.4 + 0.6;
+          for (let i = 0; i < barCount; i++) {
+            const wave1 = Math.sin(i * 0.24 + curTime * 8.0);
+            const wave2 = Math.cos(i * 0.16 - curTime * 5.1);
+            const target = Math.max(8, (Math.abs(wave1 * 0.6 + wave2 * 0.4) * speechPulse * 0.75 + 0.15) * h * 0.82);
+            targetHeights[i] = target;
+          }
+        }
+      } else {
+        // Idle target heights
+        for (let i = 0; i < barCount; i++) {
+          targetHeights[i] = Math.sin(i * 0.28) * 10 + 16;
+        }
+      }
+
+      // Smooth temporal interpolation for 60fps organic fluidity
       for (let i = 0; i < barCount; i++) {
+        barHeights[i] += (targetHeights[i] - barHeights[i]) * 0.35;
+        const amp = barHeights[i];
         const x = i * (barW + gap);
-        const amp = Math.abs(Math.sin(i * 0.25 + waveTick)) * 48 + 12;
         const y = (h - amp) / 2;
 
-        const grad = ctx.createLinearGradient(0, y, 0, y + amp);
-        grad.addColorStop(0, "#ea580c");
-        grad.addColorStop(1, "#d97706");
+        if (isPlaying) {
+          const grad = ctx.createLinearGradient(0, y, 0, y + amp);
+          grad.addColorStop(0, "#ea580c");
+          grad.addColorStop(1, "#d97706");
+          ctx.fillStyle = grad;
+        } else {
+          ctx.fillStyle = isDark ? "#38342e" : "#e5dfd5";
+        }
 
-        ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.roundRect(x, y, barW, amp, 3);
         ctx.fill();
@@ -214,11 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
     render();
-  }
-
-  function stopActiveWaveform() {
-    if (waveAnimId) cancelAnimationFrame(waveAnimId);
-    drawIdleWaveform();
   }
 
   // Initial draw

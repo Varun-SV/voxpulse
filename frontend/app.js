@@ -138,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (resp.ok) {
         voicesCatalog = await resp.json();
         updateVoicesForEngine(engineSelect.value);
+        updateAllDialogueVoiceSelectors();
         const statusLabel = document.getElementById("status-label");
         if (statusLabel) statusLabel.textContent = "Connected";
         const dot = document.querySelector(".status-dot");
@@ -150,13 +151,32 @@ document.addEventListener("DOMContentLoaded", () => {
       const dot = document.querySelector(".status-dot");
       if (dot) dot.style.backgroundColor = "#f59e0b";
       voicesCatalog = [
+        // Kokoro-82M
         { id: "af_heart", name: "Heart (US Female)", engine: "kokoro", gender: "female", language: "en-US", description: "Warm, natural" },
         { id: "am_adam", name: "Adam (US Male)", engine: "kokoro", gender: "male", language: "en-US", description: "Deep, resonant" },
+        { id: "af_bella", name: "Bella (US Female)", engine: "kokoro", gender: "female", language: "en-US", description: "Crisp storytelling" },
+        { id: "am_michael", name: "Michael (US Male)", engine: "kokoro", gender: "male", language: "en-US", description: "Friendly conversational" },
+        // Piper TTS
         { id: "en_US-lessac-medium", name: "Lessac (US Female)", engine: "piper", gender: "female", language: "en-US", description: "Fast, clear" },
         { id: "en_US-ryan-high", name: "Ryan (US Male)", engine: "piper", gender: "male", language: "en-US", description: "Dynamic" },
-        { id: "en-US-JennyNeural", name: "Jenny (US Female)", engine: "edge", gender: "female", language: "en-US", description: "Refined" }
+        // Edge Neural
+        { id: "en-US-JennyNeural", name: "Jenny (US Female)", engine: "edge", gender: "female", language: "en-US", description: "Refined" },
+        { id: "en-US-GuyNeural", name: "Guy (US Male)", engine: "edge", gender: "male", language: "en-US", description: "Authoritative" },
+        // Coqui XTTS-v2
+        { id: "xtts_female_narrator", name: "Studio Cloned (Female)", engine: "xtts", gender: "female", language: "en-US", description: "Studio clone" },
+        { id: "xtts_male_broadcaster", name: "Studio Cloned (Male)", engine: "xtts", gender: "male", language: "en-US", description: "Broadcast clone" },
+        // F5-TTS
+        { id: "f5_natural_prosody", name: "F5 Natural Flow (Female)", engine: "f5", gender: "female", language: "en-US", description: "Diffusion prosody" },
+        { id: "f5_deep_resonant", name: "F5 Deep Resonance (Male)", engine: "f5", gender: "male", language: "en-US", description: "Harmonic diffusion" },
+        // ChatTTS
+        { id: "chattts_seed_2222", name: "Conversational Female (ChatTTS)", engine: "chattts", gender: "female", language: "en-US", description: "Conversational" },
+        { id: "chattts_seed_7869", name: "Conversational Male (ChatTTS)", engine: "chattts", gender: "male", language: "en-US", description: "Lively dialogue" },
+        // Zonos-v2
+        { id: "zonos_expressive_dramatic", name: "Dramatic Expressive (Zonos)", engine: "zonos", gender: "female", language: "en-US", description: "Theatrical expressive" },
+        { id: "zonos_whisper_calm", name: "Calm Whisper (Zonos)", engine: "zonos", gender: "male", language: "en-US", description: "Intimate calm" }
       ];
       updateVoicesForEngine(engineSelect.value);
+      updateAllDialogueVoiceSelectors();
     }
   }
 
@@ -337,6 +357,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  const studioBarCount = 45;
+  const studioBarHeights = new Float32Array(studioBarCount);
+  const studioTargetHeights = new Float32Array(studioBarCount);
+
   // 6. Audio Player Controls & Web Audio Analyser
   function setupAudioAnalyzer() {
     if (!audioContext) {
@@ -349,7 +373,8 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         sourceNode = audioContext.createMediaElementSource(audioPlayer);
         analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.72;
         sourceNode.connect(analyser);
         analyser.connect(audioContext.destination);
       } catch (e) {
@@ -415,13 +440,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const isDark = htmlEl.getAttribute("data-theme") === "dark";
     canvasCtx.clearRect(0, 0, w, h);
 
-    const barCount = 45;
     const barWidth = 6;
-    const gap = (w - (barCount * barWidth)) / (barCount - 1);
+    const gap = (w - (studioBarCount * barWidth)) / (studioBarCount - 1);
 
-    for (let i = 0; i < barCount; i++) {
+    for (let i = 0; i < studioBarCount; i++) {
       const x = i * (barWidth + gap);
-      const amp = Math.sin(i * 0.3) * 15 + 20;
+      const amp = Math.sin(i * 0.3) * 12 + 18;
+      studioBarHeights[i] = amp;
       const y = (h - amp) / 2;
 
       canvasCtx.fillStyle = isDark ? "#38342e" : "#e5dfd5";
@@ -440,22 +465,75 @@ document.addEventListener("DOMContentLoaded", () => {
     const w = waveformCanvas.width;
     const h = waveformCanvas.height;
     const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyser.getByteFrequencyData(dataArray);
+    const freqData = new Uint8Array(bufferLength);
+    const timeData = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(freqData);
+    analyser.getByteTimeDomainData(timeData);
 
     canvasCtx.clearRect(0, 0, w, h);
-    const barCount = 45;
     const barWidth = 6;
-    const gap = (w - (barCount * barWidth)) / (barCount - 1);
+    const gap = (w - (studioBarCount * barWidth)) / (studioBarCount - 1);
 
-    for (let i = 0; i < barCount; i++) {
-      const idx = Math.floor((i / barCount) * (bufferLength / 2));
-      const val = dataArray[idx] || 0;
-      const amp = Math.max(8, (val / 255) * (h * 0.85));
+    // Dynamic speech RMS envelope from time domain
+    let sumSq = 0;
+    for (let j = 0; j < bufferLength; j++) {
+      const norm = (timeData[j] - 128) / 128;
+      sumSq += norm * norm;
+    }
+    const rms = Math.sqrt(sumSq / bufferLength);
+    const speechEnvelope = Math.min(1.0, rms * 4.2);
+
+    let totalEnergy = 0;
+    for (let j = 0; j < 64; j++) totalEnergy += freqData[j];
+
+    if (totalEnergy > 10) {
+      const sampleRate = audioContext ? audioContext.sampleRate : 44100;
+      const binHz = sampleRate / analyser.fftSize;
+
+      // Logarithmic mapping across human speech frequencies (85 Hz to 7200 Hz)
+      const minFreq = 85;
+      const maxFreq = 7200;
+
+      for (let i = 0; i < studioBarCount; i++) {
+        const ratio = i / (studioBarCount - 1);
+        const centerFreq = minFreq * Math.pow(maxFreq / minFreq, ratio);
+        const centerBin = Math.round(centerFreq / binHz);
+
+        const windowSpan = Math.max(1, Math.round(centerBin * 0.12));
+        let bandSum = 0;
+        let bandBins = 0;
+        const startBin = Math.max(0, centerBin - windowSpan);
+        const endBin = Math.min(bufferLength - 1, centerBin + windowSpan);
+        for (let b = startBin; b <= endBin; b++) {
+          bandSum += freqData[b];
+          bandBins++;
+        }
+        const rawMag = bandBins > 0 ? (bandSum / bandBins) / 255 : 0;
+
+        // Formant tilt boost for crisp consonants & high-frequency formants
+        const tiltBoost = 1.0 + Math.pow(ratio, 1.15) * 2.4;
+        const combined = (rawMag * 0.72 + speechEnvelope * 0.28) * tiltBoost;
+        const target = Math.max(8, Math.min(h * 0.88, combined * h * 0.95));
+        studioTargetHeights[i] = target;
+      }
+    } else {
+      const curTime = audioPlayer.currentTime || 0;
+      const speechPulse = Math.sin(curTime * 5.2) * 0.4 + 0.6;
+      for (let i = 0; i < studioBarCount; i++) {
+        const wave1 = Math.sin(i * 0.24 + curTime * 8.0);
+        const wave2 = Math.cos(i * 0.16 - curTime * 5.1);
+        const target = Math.max(8, (Math.abs(wave1 * 0.6 + wave2 * 0.4) * speechPulse * 0.75 + 0.15) * h * 0.82);
+        studioTargetHeights[i] = target;
+      }
+    }
+
+    // Smooth temporal interpolation
+    for (let i = 0; i < studioBarCount; i++) {
+      studioBarHeights[i] += (studioTargetHeights[i] - studioBarHeights[i]) * 0.35;
+      const amp = studioBarHeights[i];
       const x = i * (barWidth + gap);
       const y = (h - amp) / 2;
 
-      // Vibrant Amber Gradient
       const grad = canvasCtx.createLinearGradient(0, y, 0, y + amp);
       grad.addColorStop(0, "#ea580c");
       grad.addColorStop(1, "#d97706");
@@ -581,7 +659,90 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 10. Dialogue Studio
+  // 10. Dialogue Studio Voice Engine Resolution
+  const ENGINE_LABELS = {
+    kokoro: "Kokoro-82M (Ultra-Fast)",
+    piper: "Piper TTS (Real-Time Edge)",
+    edge: "Edge Neural (Multilingual)",
+    f5: "F5-TTS (Flow-Matching Diffusion)",
+    xtts: "Coqui XTTS-v2 (Voice Cloning)",
+    chattts: "ChatTTS (Conversational Prosody)",
+    zonos: "Zonos-v2 (Expressive Mamba)"
+  };
+
+  function buildDialogueVoiceOptionsHTML(selectedVoiceId) {
+    if (!voicesCatalog || voicesCatalog.length === 0) {
+      return `
+        <optgroup label="Kokoro-82M (Ultra-Fast)">
+          <option value="af_heart" data-engine="kokoro" ${selectedVoiceId === "af_heart" ? "selected" : ""}>Heart (US Female)</option>
+          <option value="am_adam" data-engine="kokoro" ${selectedVoiceId === "am_adam" ? "selected" : ""}>Adam (US Male)</option>
+        </optgroup>
+        <optgroup label="Piper TTS (Real-Time Edge)">
+          <option value="en_US-lessac-medium" data-engine="piper" ${selectedVoiceId === "en_US-lessac-medium" ? "selected" : ""}>Lessac (US Female)</option>
+          <option value="en_US-ryan-high" data-engine="piper" ${selectedVoiceId === "en_US-ryan-high" ? "selected" : ""}>Ryan (US Male)</option>
+        </optgroup>
+        <optgroup label="Edge Neural (Multilingual)">
+          <option value="en-US-JennyNeural" data-engine="edge" ${selectedVoiceId === "en-US-JennyNeural" ? "selected" : ""}>Jenny (US Female)</option>
+          <option value="en-US-GuyNeural" data-engine="edge" ${selectedVoiceId === "en-US-GuyNeural" ? "selected" : ""}>Guy (US Male)</option>
+        </optgroup>
+        <optgroup label="F5-TTS (Flow-Matching Diffusion)">
+          <option value="f5_natural_prosody" data-engine="f5" ${selectedVoiceId === "f5_natural_prosody" ? "selected" : ""}>F5 Natural Flow (US)</option>
+          <option value="f5_deep_resonant" data-engine="f5" ${selectedVoiceId === "f5_deep_resonant" ? "selected" : ""}>F5 Deep Resonance (US)</option>
+        </optgroup>
+        <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
+          <option value="xtts_female_narrator" data-engine="xtts" ${selectedVoiceId === "xtts_female_narrator" ? "selected" : ""}>Studio Cloned (Female)</option>
+          <option value="xtts_male_broadcaster" data-engine="xtts" ${selectedVoiceId === "xtts_male_broadcaster" ? "selected" : ""}>Studio Cloned (Male)</option>
+        </optgroup>
+        <optgroup label="ChatTTS (Conversational Prosody)">
+          <option value="chattts_seed_2222" data-engine="chattts" ${selectedVoiceId === "chattts_seed_2222" ? "selected" : ""}>Conversational Female</option>
+          <option value="chattts_seed_7869" data-engine="chattts" ${selectedVoiceId === "chattts_seed_7869" ? "selected" : ""}>Conversational Male</option>
+        </optgroup>
+        <optgroup label="Zonos-v2 (Expressive Mamba)">
+          <option value="zonos_expressive_dramatic" data-engine="zonos" ${selectedVoiceId === "zonos_expressive_dramatic" ? "selected" : ""}>Dramatic Expressive</option>
+          <option value="zonos_whisper_calm" data-engine="zonos" ${selectedVoiceId === "zonos_whisper_calm" ? "selected" : ""}>Calm Whisper</option>
+        </optgroup>
+      `;
+    }
+
+    const groups = {};
+    voicesCatalog.forEach(v => {
+      const eng = (v.engine || "kokoro").toLowerCase();
+      if (!groups[eng]) groups[eng] = [];
+      groups[eng].push(v);
+    });
+
+    let html = "";
+    const engineOrder = ["kokoro", "piper", "edge", "f5", "xtts", "chattts", "zonos"];
+    Object.keys(groups).forEach(eng => {
+      if (!engineOrder.includes(eng)) engineOrder.push(eng);
+    });
+
+    engineOrder.forEach(eng => {
+      const list = groups[eng];
+      if (!list || list.length === 0) return;
+      const groupLabel = ENGINE_LABELS[eng] || (eng.toUpperCase() + " Engine");
+      html += `<optgroup label="${groupLabel}">`;
+      list.forEach(v => {
+        const isSelected = v.id === selectedVoiceId ? "selected" : "";
+        html += `<option value="${v.id}" data-engine="${eng}" ${isSelected}>${v.name} [${v.gender || "neutral"}]</option>`;
+      });
+      html += `</optgroup>`;
+    });
+
+    return html;
+  }
+
+  function updateAllDialogueVoiceSelectors() {
+    const selects = document.querySelectorAll(".line-voice-select");
+    selects.forEach(sel => {
+      const currentVal = sel.value;
+      sel.innerHTML = buildDialogueVoiceOptionsHTML(currentVal);
+      if (currentVal && sel.querySelector(`option[value="${currentVal}"]`)) {
+        sel.value = currentVal;
+      }
+    });
+  }
+
   const btnAddLine = document.getElementById("btn-add-line");
   const dialogueLines = document.getElementById("dialogue-lines");
   const btnRenderDialogue = document.getElementById("btn-render-dialogue");
@@ -591,14 +752,17 @@ document.addEventListener("DOMContentLoaded", () => {
   btnAddLine.addEventListener("click", () => {
     const lineCard = document.createElement("div");
     lineCard.className = "dialogue-line-card";
+    const lineCount = dialogueLines.querySelectorAll(".dialogue-line-card").length;
+    const isHost = lineCount % 2 === 0;
+    const speakerLabel = isHost ? "Host" : "Guest";
+    const pillClass = isHost ? "speaker-host" : "speaker-guest";
+    const defaultVoice = isHost ? "af_heart" : (voicesCatalog.find(v => v.engine === "f5" || v.engine === "piper")?.id || "am_adam");
+
     lineCard.innerHTML = `
       <div class="line-meta">
-        <div class="speaker-pill speaker-host">Speaker</div>
+        <div class="speaker-pill ${pillClass}">${speakerLabel}</div>
         <select class="line-voice-select">
-          <option value="af_heart" selected>Kokoro: Heart (US)</option>
-          <option value="am_adam">Kokoro: Adam (US)</option>
-          <option value="en_US-lessac-medium">Piper: Lessac (US)</option>
-          <option value="en-US-JennyNeural">Edge: Jenny (US)</option>
+          ${buildDialogueVoiceOptionsHTML(defaultVoice)}
         </select>
       </div>
       <textarea class="line-text" placeholder="Type line script here..."></textarea>
@@ -618,10 +782,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     lineCards.forEach(card => {
       const text = card.querySelector(".line-text").value.trim();
-      const voice = card.querySelector(".line-voice-select").value;
+      const voiceSelect = card.querySelector(".line-voice-select");
+      const voice = voiceSelect ? voiceSelect.value : "af_heart";
+      const selectedOpt = voiceSelect ? voiceSelect.selectedOptions[0] : null;
+      const engine = (selectedOpt && selectedOpt.dataset.engine) ? selectedOpt.dataset.engine : "kokoro";
       const speaker = card.querySelector(".speaker-pill").textContent;
       if (text) {
-        segments.push({ speaker, text, voice, engine: "kokoro", speed: 1.0 });
+        segments.push({ speaker, text, voice, engine, speed: 1.0 });
       }
     });
 
