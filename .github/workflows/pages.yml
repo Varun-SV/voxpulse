@@ -30,7 +30,7 @@ jobs:
       - name: Prepare site directory
         run: |
           mkdir -p _site
-          cp -r frontend/* _site/
+          cp -r site/* _site/
           cp -r assets _site/
 
       - name: Upload artifact

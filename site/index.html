@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoxPulse Studio — The Universal Open-Source Self-Hosted TTS</title>
+  <meta name="description" content="Self-hosted neural speech synthesis gateway. Unify Kokoro-82M, Piper, XTTS-v2, and F5-TTS behind a single Docker container with an OpenAI-compatible speech API.">
+  <link rel="icon" type="image/svg+xml" href="./assets/brand/voxpulse-logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <!-- Global Navigation -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="#" class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5v14M7 8v8M22 10v4M2 11v2" />
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-name">VoxPulse</span>
+          <span class="brand-tag">Studio</span>
+        </div>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#engines" class="nav-link">Supported Engines</a>
+        <a href="#samples" class="nav-link">Audio Showcase</a>
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#quickstart" class="nav-link">Quickstart</a>
+      </nav>
+
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-toggle" title="Toggle Light/Dark Theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <a href="https://github.com/Varun-SV/voxpulse" target="_blank" rel="noopener" class="btn btn-secondary nav-github-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="container hero-container">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        <span>v1.0.0 Open-Source Release &bull; Apache 2.0</span>
+      </div>
+
+      <h1 class="hero-title">
+        The Universal Open-Source<br>Speech Synthesis Platform.
+      </h1>
+
+      <p class="hero-desc">
+        Unify <strong>Kokoro-82M</strong>, <strong>Piper TTS</strong>, <strong>Coqui XTTS-v2</strong>, and <strong>F5-TTS</strong> behind a single self-hosted Docker container with a drop-in <strong>OpenAI-compatible speech API</strong>. Free, private, and runs on your own hardware.
+      </p>
+
+      <div class="hero-actions">
+        <div class="command-pill" id="btn-copy-docker" title="Click to copy command">
+          <span class="cmd-prefix">$</span>
+          <code class="cmd-text">docker compose up -d</code>
+          <button class="cmd-copy-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+
+        <a href="#quickstart" class="btn btn-primary">
+          <span>Get Started</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+
+      <!-- Hero Visual Showcase -->
+      <div class="hero-mockup-wrapper">
+        <div class="mockup-frame">
+          <img src="./assets/brand/voxpulse-banner.png" alt="VoxPulse Studio Interface" class="mockup-img">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Model Engine Logos Strip -->
+  <section class="engines-strip">
+    <div class="container">
+      <p class="strip-label">Supported Open-Source Neural Engines</p>
+      <div class="strip-grid">
+        <div class="strip-item">
+          <strong>Kokoro-82M</strong>
+          <span>StyleTTS 2 ONNX &bull; &lt;80ms</span>
+        </div>
+        <div class="strip-item">
+          <strong>Piper TTS</strong>
+          <span>Rhasspy VITS &bull; Edge CPU</span>
+        </div>
+        <div class="strip-item">
+          <strong>F5-TTS</strong>
+          <span>Flow-Matching Diffusion</span>
+        </div>
+        <div class="strip-item">
+          <strong>Coqui XTTS-v2</strong>
+          <span>Zero-Shot Cloning (17 Langs)</span>
+        </div>
+        <div class="strip-item">
+          <strong>ChatTTS</strong>
+          <span>Conversational Dialogue</span>
+        </div>
+        <div class="strip-item">
+          <strong>Zonos-v2</strong>
+          <span>Zyphra Expressive MoE</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Audio Showcase (Static Web Audio Demo) -->
+  <section class="section showcase-section" id="samples">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Interactive Voice Samples</span>
+        <h2 class="section-title">Listen to Model Timbres</h2>
+        <p class="section-subtitle">Experience the distinct characteristics of each neural model right in your browser.</p>
+      </div>
+
+      <div class="sample-player-card card">
+        <div class="sample-tabs" role="tablist">
+          <button class="sample-tab active" data-sample="kokoro">
+            <span class="tab-title">Kokoro-82M</span>
+            <span class="tab-meta">Heart (Warm Storytelling)</span>
+          </button>
+          <button class="sample-tab" data-sample="piper">
+            <span class="tab-title">Piper TTS</span>
+            <span class="tab-meta">Lessac (Instant Edge CPU)</span>
+          </button>
+          <button class="sample-tab" data-sample="f5">
+            <span class="tab-title">F5-TTS</span>
+            <span class="tab-meta">Flow-Matching Prosody</span>
+          </button>
+          <button class="sample-tab" data-sample="xtts">
+            <span class="tab-title">XTTS-v2</span>
+            <span class="tab-meta">Zero-Shot Studio Clone</span>
+          </button>
+        </div>
+
+        <div class="sample-display">
+          <div class="sample-text-box">
+            <p id="sample-quote">"Welcome to VoxPulse Studio. High-fidelity speech synthesized directly on your hardware."</p>
+            <div class="sample-meta-row">
+              <span class="metric-pill" id="sample-engine-tag">Engine: Kokoro-82M</span>
+              <span class="metric-pill" id="sample-latency-tag">Latency: 42ms (RTF: 0.11)</span>
+              <span class="metric-pill" id="sample-hw-tag">Hardware: CPU / Low RAM</span>
+            </div>
+          </div>
+
+          <div class="visualizer-container">
+            <canvas id="landing-waveform" width="800" height="90"></canvas>
+          </div>
+
+          <div class="player-controls-row">
+            <button class="btn btn-primary btn-play-sample" id="btn-play-sample">
+              <svg id="sample-play-icon" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <svg id="sample-pause-icon" viewBox="0 0 24 24" fill="currentColor" width="18" height="18" style="display:none;">
+                <rect x="6" y="4" width="4" height="16"></rect>
+                <rect x="14" y="4" width="4" height="16"></rect>
+              </svg>
+              <span id="btn-play-sample-text">Play Audio Sample</span>
+            </button>
+            <span class="sample-tip">Audio rendered dynamically using the Web Audio API</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Capabilities / Features -->
+  <section class="section features-section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Core Features</span>
+        <h2 class="section-title">Designed for Self-Hosters & Creators</h2>
+        <p class="section-subtitle">Everything you need to produce, automate, and serve synthetic speech locally.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">Ultra-Fast CPU Synthesis</h3>
+          <p class="feature-desc">
+            Powered by Kokoro-82M and Piper ONNX runtimes. Generates natural speech in under 80ms on standard CPUs without requiring an expensive NVIDIA GPU.
+          </p>
+          <div class="feature-meta">Hardware: 500MB RAM &bull; Zero GPU needed</div>
+        </div>
+
+        <div class="feature-card card">
+          <div class="feature-icon">🔌</div>
+          <h3 class="feature-title">OpenAI Drop-In API</h3>
+          <p class="feature-desc">
+            Implements the standard <code>/v1/audio/speech</code> specification. Instantly connect Open WebUI, LibreChat, Obsidian, Home Assistant, or LangChain by changing a single base URL.
+          </p>
+          <div class="feature-meta">Standard: POST /v1/audio/speech</div>
+        </div>
+
+        <div class="feature-card card">
+          <div class="feature-icon">🧬</div>
+          <h3 class="feature-title">Zero-Shot Voice Cloning</h3>
+          <p class="feature-desc">
+            Connect XTTS-v2 or F5-TTS to clone any speaker's voice using just 3 to 10 seconds of clean reference audio across 17 languages.
+          </p>
+          <div class="feature-meta">Cloning: Reference Audio &bull; 17 Locales</div>
+        </div>
+
+        <div class="feature-card card">
+          <div class="feature-icon">🎙️</div>
+          <h3 class="feature-title">Dialogue & Podcast Studio</h3>
+          <p class="feature-desc">
+            Compose multi-speaker conversational scripts with Host and Guest voices. The studio automatically synthesizes, balances, and stitches lines into a single master track.
+          </p>
+          <div class="feature-meta">Studio: Multi-Actor Audio Stitching</div>
+        </div>
+
+        <div class="feature-card card">
+          <div class="feature-icon">⚔️</div>
+          <h3 class="feature-title">Engine Shootout Arena</h3>
+          <p class="feature-desc">
+            Enter any text prompt and compare generations side-by-side across Kokoro, Piper, Edge, and F5-TTS to evaluate latency, prosody, and emotional nuance.
+          </p>
+          <div class="feature-meta">Benchmark: Latency (ms) &amp; RTF</div>
+        </div>
+
+        <div class="feature-card card">
+          <div class="feature-icon">🔒</div>
+          <h3 class="feature-title">100% Offline & Private</h3>
+          <p class="feature-desc">
+            Zero telemetry, zero cloud dependencies, and zero monthly API subscriptions. Your data, prompts, and audio files never leave your machine.
+          </p>
+          <div class="feature-meta">Privacy: Fully Self-Hosted &bull; Dockerized</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Showcase Images Grid -->
+  <section class="section mockups-section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">User Interface</span>
+        <h2 class="section-title">A Thoughtful Studio Interface</h2>
+        <p class="section-subtitle">Warm editorial typography, tactile controls, and real-time audio visualization.</p>
+      </div>
+
+      <div class="mockups-grid">
+        <div class="mockup-card card">
+          <img src="./assets/screenshots/voxpulse-studio-hero.jpg" alt="VoxPulse Synthesis Playground" class="ui-screenshot">
+          <div class="mockup-caption">
+            <h4>Text Synthesis Playground</h4>
+            <p>Interactive script editor with speed, pitch, engine selection, and live Web Audio waveform visualization.</p>
+          </div>
+        </div>
+
+        <div class="mockup-card card">
+          <img src="./assets/screenshots/voxpulse-features-mockup.jpg" alt="Podcast Dialogue Studio and Cloning Lab" class="ui-screenshot">
+          <div class="mockup-caption">
+            <h4>Multi-Speaker Dialogue Studio &amp; Cloning Lab</h4>
+            <p>Compose multi-actor podcasts and clone voices with audio sample drag-and-drop.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture Section -->
+  <section class="section arch-section" id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">System Design</span>
+        <h2 class="section-title">Modular Multi-Engine Architecture</h2>
+        <p class="section-subtitle">Lightweight core container out-of-the-box, with optional GPU microservice profiles.</p>
+      </div>
+
+      <div class="arch-card card">
+        <div class="arch-diagram-grid">
+          <div class="arch-box core-box">
+            <span class="box-badge">Default Container</span>
+            <h3>Core Docker Service (CPU &amp; GPU)</h3>
+            <p>Runs on any desktop, laptop, or home server with zero setup friction.</p>
+            <ul>
+              <li><strong>Kokoro-82M ONNX</strong> — Ultra-fast neural model (&lt;80ms RTF)</li>
+              <li><strong>Piper TTS</strong> — Ultra-lightweight VITS edge engine (&lt;50ms)</li>
+              <li><strong>Edge Neural</strong> — 100+ voices across 40+ languages</li>
+              <li><strong>OpenAI Gateway</strong> — <code>/v1/audio/speech</code> drop-in API</li>
+            </ul>
+          </div>
+
+          <div class="arch-divider">
+            <span>HTTP Adapters</span>
+          </div>
+
+          <div class="arch-box gpu-box">
+            <span class="box-badge gpu-badge">Optional GPU Profiles</span>
+            <h3>Specialized Heavy Engines</h3>
+            <p>Enabled on-demand via Docker Compose profiles for users with dedicated VRAM.</p>
+            <ul>
+              <li><strong>Coqui XTTS-v2</strong> — <code>--profile gpu-cloning</code> (4GB VRAM)</li>
+              <li><strong>F5-TTS</strong> — Flow-matching zero-shot diffusion</li>
+              <li><strong>ChatTTS</strong> — Conversational disfluency model</li>
+              <li><strong>Zonos-v2</strong> — Emotion-conditioned MoE</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Supported Engines Comparison Matrix -->
+  <section class="section matrix-section" id="engines">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Technical Matrix</span>
+        <h2 class="section-title">Engine Comparison Matrix</h2>
+        <p class="section-subtitle">Detailed breakdown of hardware, latency, voice cloning, and licenses.</p>
+      </div>
+
+      <div class="card matrix-card">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Engine</th>
+              <th>Architecture</th>
+              <th>Hardware</th>
+              <th>Latency / RTF</th>
+              <th>Voice Cloning</th>
+              <th>License</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Kokoro-82M</strong></td>
+              <td>StyleTTS2 / ONNX</td>
+              <td><span class="badge-tag cpu">CPU / GPU</span></td>
+              <td>&lt; 80ms (Ultra-Fast)</td>
+              <td>40+ Pre-trained Voices</td>
+              <td><span class="badge-tag license">Apache 2.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Piper TTS</strong></td>
+              <td>VITS / Acoustic</td>
+              <td><span class="badge-tag cpu">CPU / Edge</span></td>
+              <td>&lt; 50ms (Instant)</td>
+              <td>Model Finetune</td>
+              <td><span class="badge-tag license">MIT</span></td>
+            </tr>
+            <tr>
+              <td><strong>F5-TTS</strong></td>
+              <td>Flow-Matching Diffusion</td>
+              <td><span class="badge-tag gpu">GPU Recommended</span></td>
+              <td>~ 300ms (Natural)</td>
+              <td>Zero-Shot (3s wav)</td>
+              <td><span class="badge-tag license">MIT</span></td>
+            </tr>
+            <tr>
+              <td><strong>Coqui XTTS-v2</strong></td>
+              <td>Autoregressive + HiFi</td>
+              <td><span class="badge-tag gpu">GPU Recommended</span></td>
+              <td>~ 400ms</td>
+              <td>Zero-Shot (17 Languages)</td>
+              <td><span class="badge-tag license">CPML</span></td>
+            </tr>
+            <tr>
+              <td><strong>ChatTTS</strong></td>
+              <td>Conversational Generative</td>
+              <td><span class="badge-tag gpu">GPU (4GB VRAM)</span></td>
+              <td>~ 350ms</td>
+              <td>Latent Seeds</td>
+              <td><span class="badge-tag license">OSS</span></td>
+            </tr>
+            <tr>
+              <td><strong>Zonos-v2 (Zyphra)</strong></td>
+              <td>MoE Transformer</td>
+              <td><span class="badge-tag gpu">GPU (6GB+ VRAM)</span></td>
+              <td>~ 300ms</td>
+              <td>Zero-Shot + Emotion</td>
+              <td><span class="badge-tag license">Apache 2.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Edge Neural TTS</strong></td>
+              <td>Deep Neural Vocoder</td>
+              <td><span class="badge-tag cpu">Lightweight</span></td>
+              <td>&lt; 120ms</td>
+              <td>100+ Studio Voices</td>
+              <td><span class="badge-tag license">Free</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quickstart Guide -->
+  <section class="section quickstart-section" id="quickstart">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag">Deployment</span>
+        <h2 class="section-title">Launch in Under 30 Seconds</h2>
+        <p class="section-subtitle">Get your own private speech engine running with standard Docker commands.</p>
+      </div>
+
+      <div class="quickstart-grid">
+        <div class="step-card card">
+          <div class="step-num">1</div>
+          <h3 class="step-title">Clone the Repository</h3>
+          <p class="step-desc">Grab the project files and configuration.</p>
+          <pre class="step-code"><code>git clone https://github.com/Varun-SV/voxpulse.git
+cd voxpulse</code></pre>
+        </div>
+
+        <div class="step-card card">
+          <div class="step-num">2</div>
+          <h3 class="step-title">Start the Container</h3>
+          <p class="step-desc">Launches the core engines and web studio.</p>
+          <pre class="step-code"><code>docker compose up -d</code></pre>
+        </div>
+
+        <div class="step-card card">
+          <div class="step-num">3</div>
+          <h3 class="step-title">Open Studio &amp; Connect APIs</h3>
+          <p class="step-desc">Access the studio interface or plug into your AI apps.</p>
+          <pre class="step-code"><code># Web Studio UI
+http://localhost:8000
+
+# OpenAI API Endpoint
+http://localhost:8000/v1/audio/speech</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-left">
+        <div class="footer-brand-row">
+          <div class="brand-icon small">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20M17 5v14M7 8v8M22 10v4M2 11v2" />
+            </svg>
+          </div>
+          <strong>VoxPulse Studio</strong>
+        </div>
+        <p class="footer-desc">The universal open-source self-hosted text-to-speech platform.</p>
+      </div>
+
+      <div class="footer-right">
+        <a href="https://github.com/Varun-SV/voxpulse" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="https://github.com/Varun-SV/voxpulse/blob/main/LICENSE" target="_blank" rel="noopener">Apache 2.0 License</a>
+        <a href="#quickstart">Quickstart</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>
