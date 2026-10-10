@@ -37,45 +37,42 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Audio Showcase Data & Interactive Player
+  // Audio Showcase Data & Interactive Player (Using actual neural model recordings)
   const SAMPLES = {
     kokoro: {
       engine: "Engine: Kokoro-82M",
       quote: '"Welcome to VoxPulse Studio. High-fidelity speech synthesized directly on your hardware in under 80 milliseconds."',
       latency: "Latency: 42ms (RTF: 0.11)",
       hw: "Hardware: CPU / 500MB RAM",
-      rate: 1.0,
-      pitch: 1.05
+      audioUrl: "./assets/audio/kokoro-sample.mp3"
     },
     piper: {
       engine: "Engine: Piper TTS",
       quote: '"Fast, predictable, and remarkably lightweight. Optimized specifically for Raspberry Pi, local servers, and screen readers."',
       latency: "Latency: 28ms (RTF: 0.08)",
       hw: "Hardware: Edge CPU / 100MB RAM",
-      rate: 1.15,
-      pitch: 0.95
+      audioUrl: "./assets/audio/piper-sample.mp3"
     },
     f5: {
       engine: "Engine: F5-TTS",
       quote: '"Non-autoregressive flow-matching brings breathtaking natural cadence, breathing pauses, and studio-grade voice cloning."',
       latency: "Latency: 280ms (RTF: 0.35)",
       hw: "Hardware: GPU Recommended (4GB VRAM)",
-      rate: 0.95,
-      pitch: 1.0
+      audioUrl: "./assets/audio/f5-sample.mp3"
     },
     xtts: {
       engine: "Engine: Coqui XTTS-v2",
       quote: '"Cross-lingual zero-shot voice cloning. Deliver multilingual experiences across seventeen languages with just three seconds of audio."',
       latency: "Latency: 350ms (RTF: 0.42)",
       hw: "Hardware: GPU Recommended (4GB VRAM)",
-      rate: 1.0,
-      pitch: 0.98
+      audioUrl: "./assets/audio/xtts-sample.mp3"
     }
   };
 
   let activeSampleKey = "kokoro";
   let isPlaying = false;
   let waveAnimId = null;
+  let sampleAudio = new Audio();
 
   const sampleTabs = document.querySelectorAll(".sample-tab");
   const sampleQuote = document.getElementById("sample-quote");
@@ -88,6 +85,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const samplePauseIcon = document.getElementById("sample-pause-icon");
   const canvas = document.getElementById("landing-waveform");
   const ctx = canvas ? canvas.getContext("2d") : null;
+
+  sampleAudio.addEventListener("ended", () => {
+    stopSample();
+  });
+  sampleAudio.addEventListener("pause", () => {
+    if (isPlaying) stopSample();
+  });
 
   // Sample tab clicks
   sampleTabs.forEach(tab => {
@@ -107,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Play Sample button using Web Audio Synthesis & Speech
+  // Play Sample button using Real Neural Model MP3 files
   if (btnPlaySample) {
     btnPlaySample.addEventListener("click", () => {
       if (isPlaying) {
@@ -119,41 +123,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function playSample() {
+    const data = SAMPLES[activeSampleKey];
+    if (!data || !data.audioUrl) return;
+
     isPlaying = true;
     samplePlayIcon.style.display = "none";
     samplePauseIcon.style.display = "block";
     btnPlaySampleText.textContent = "Pause Sample";
 
-    const data = SAMPLES[activeSampleKey];
-    const textToSpeak = sampleQuote.textContent.replace(/"/g, "");
-
-    // Browser Speech Synthesis
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(textToSpeak);
-      utterance.rate = data.rate || 1.0;
-      utterance.pitch = data.pitch || 1.0;
-
-      utterance.onend = () => {
-        stopSample();
-      };
-      utterance.onerror = () => {
-        stopSample();
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } else {
-      // Automatic stop after 4s
-      setTimeout(stopSample, 4000);
+    // Set source and play actual neural model audio
+    if (!sampleAudio.src.endsWith(data.audioUrl.replace("./", ""))) {
+      sampleAudio.src = data.audioUrl;
     }
-
-    startActiveWaveform();
+    
+    sampleAudio.play().then(() => {
+      startActiveWaveform();
+    }).catch(err => {
+      console.warn("Audio playback error:", err);
+      stopSample();
+    });
   }
 
   function stopSample() {
     isPlaying = false;
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+    if (sampleAudio) {
+      sampleAudio.pause();
+      sampleAudio.currentTime = 0;
     }
     if (samplePlayIcon) samplePlayIcon.style.display = "block";
     if (samplePauseIcon) samplePauseIcon.style.display = "none";
