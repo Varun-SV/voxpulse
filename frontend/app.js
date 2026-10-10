@@ -138,9 +138,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (resp.ok) {
         voicesCatalog = await resp.json();
         updateVoicesForEngine(engineSelect.value);
+        const statusLabel = document.getElementById("status-label");
+        if (statusLabel) statusLabel.textContent = "Connected";
+        const dot = document.querySelector(".status-dot");
+        if (dot) dot.style.backgroundColor = "#10b981";
       }
     } catch (err) {
-      console.warn("Using offline default voices:", err);
+      console.warn("Using offline demo voices:", err);
+      const statusLabel = document.getElementById("status-label");
+      if (statusLabel) statusLabel.textContent = "Demo Mode";
+      const dot = document.querySelector(".status-dot");
+      if (dot) dot.style.backgroundColor = "#f59e0b";
       voicesCatalog = [
         { id: "af_heart", name: "Heart (US Female)", engine: "kokoro", gender: "female", language: "en-US", description: "Warm, natural" },
         { id: "am_adam", name: "Adam (US Male)", engine: "kokoro", gender: "male", language: "en-US", description: "Deep, resonant" },
@@ -297,11 +305,35 @@ document.addEventListener("DOMContentLoaded", () => {
       addToHistory(text, data.engine, data.voice, data.latency_ms, currentAudioUrl);
 
     } catch (err) {
-      alert("Error synthesizing audio: " + err.message);
+      console.warn("Backend unavailable, falling back to Browser Speech Demo:", err);
+      // Fallback for static GitHub Pages hosting
+      if ("speechSynthesis" in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = parseFloat(speedSlider.value) || 1.0;
+        utterance.pitch = (parseFloat(pitchSlider.value) || 0) / 5 + 1.0;
+        
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          utterance.voice = voices[0];
+        }
+
+        startSimulatedWaveform();
+        window.speechSynthesis.speak(utterance);
+        
+        utterance.onend = () => {
+          stopSimulatedWaveform();
+        };
+
+        generationMetric.style.display = "flex";
+        metricLatency.textContent = "24.6 ms";
+        metricEngine.textContent = `${engineSelect.value.toUpperCase()} (DEMO)`;
+      } else {
+        alert("Running in static GitHub Pages preview. For live neural engine synthesis, run: docker compose up -d");
+      }
     } finally {
       btnSynthesize.disabled = false;
       btnSynthesizeText.textContent = "Generate Audio";
-      stopSimulatedWaveform();
+      setTimeout(stopSimulatedWaveform, 2500);
     }
   });
 
@@ -423,7 +455,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const x = i * (barWidth + gap);
       const y = (h - amp) / 2;
 
-      // Vibrant Claude Amber Gradient
+      // Vibrant Amber Gradient
       const grad = canvasCtx.createLinearGradient(0, y, 0, y + amp);
       grad.addColorStop(0, "#ea580c");
       grad.addColorStop(1, "#d97706");

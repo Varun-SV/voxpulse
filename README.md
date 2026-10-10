@@ -14,17 +14,21 @@
   <a href="https://platform.openai.com/docs/guides/text-to-speech"><img src="https://img.shields.io/badge/OpenAI%20API-Compatible-orange?logo=openai" alt="OpenAI API Compatible"></a>
 </p>
 
+<p align="center">
+  <a href="https://varun-sv.github.io/voxpulse/"><img src="https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-c2410c?style=for-the-badge&logo=github" alt="Live Demo on GitHub Pages"></a>
+</p>
+
 ---
 
 ## ⚡ Overview
 
-**VoxPulse Studio** is an all-in-one, self-hostable speech platform that bridges the entire open-source neural TTS ecosystem into a single, unified Docker service and a warm, Claude-inspired web audio studio.
+**VoxPulse Studio** is an all-in-one, self-hostable speech platform that bridges the entire open-source neural TTS ecosystem into a single, unified Docker service and a warm, minimalist editorial web audio studio.
 
 Instead of wrestling with fragmented repositories, conflicting CUDA runtimes, and differing APIs, VoxPulse gives you:
 * **Out-of-the-Box Lightweight Engines**: State-of-the-art **Kokoro-82M** (ultra-fast ONNX), **Piper TTS** (Rhasspy edge VITS), and **Edge Neural** (100+ voices) running instantly on any standard CPU or GPU.
 * **Heavyweight Microservice Adapters**: Seamless connectors for **F5-TTS** (flow-matching diffusion), **Coqui XTTS-v2** (zero-shot multilingual cloning), **ChatTTS** (conversational markers), and **Zonos-v2** (expressive MoE).
 * **OpenAI Drop-In Compatibility**: Exposes `POST /v1/audio/speech`, allowing you to replace expensive cloud TTS in **Open WebUI**, **LibreChat**, **Home Assistant**, or **Obsidian** with a single base URL change.
-* **Claude-Style Minimalist Studio**: Editorial serif typography, warm parchment tones, interactive Web Audio API frequency visualizer, side-by-side engine shootout arena, and podcast script editor.
+* **Minimalist Editorial Studio**: Classic serif typography, warm parchment tones, interactive Web Audio API frequency visualizer, side-by-side engine shootout arena, and podcast script editor.
 
 ---
 
@@ -177,7 +181,7 @@ curl http://localhost:8000/v1/audio/speech \
 
 ```mermaid
 flowchart TD
-    Client["Client / Open WebUI / Browser"] -->|"HTTP / WebSocket"| Studio["Claude-Aesthetic Web Studio\n& OpenAI API (/v1/audio/speech)"]
+    Client["Client / Open WebUI / Browser"] -->|"HTTP / WebSocket"| Studio["Minimalist Editorial Web Studio\n& OpenAI API (/v1/audio/speech)"]
     
     subgraph CoreContainer ["Core VoxPulse Container (CPU & GPU)"]
         Studio --> Router["Unified Engine Dispatcher"]

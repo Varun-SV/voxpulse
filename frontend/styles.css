@@ -1,5 +1,5 @@
 /* ==========================================================================
-   VoxPulse Studio — Claude-Inspired Aesthetic Design System
+   VoxPulse Studio — Minimalist Editorial Design System
    ========================================================================== */
 
 :root {
@@ -7,7 +7,7 @@
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Warm Claude Light Palette */
+  /* Warm Minimalist Light Palette */
   --bg-primary: #fbf9f5;
   --bg-surface: #ffffff;
   --bg-surface-soft: #f7f4ed;

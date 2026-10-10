@@ -32,22 +32,16 @@ app.include_router(openai_router)
 app.include_router(studio_router)
 app.include_router(system_router)
 
-# Mount frontend static directory
-frontend_dir = settings.base_dir / "frontend"
-if frontend_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
-
-    @app.get("/", include_in_schema=False)
-    async def serve_index():
-        index_file = frontend_dir / "index.html"
-        if index_file.exists():
-            return FileResponse(str(index_file))
-        return {"status": "ok", "message": "VoxPulse Studio Backend Ready"}
-
 # Mount assets directory for screenshots and brand images
 assets_dir = settings.base_dir / "assets"
 if assets_dir.exists():
     app.mount("/assets", StaticFiles(directory=str(assets_dir)), name="assets")
+
+# Mount frontend directory for root and static asset delivery
+frontend_dir = settings.base_dir / "frontend"
+if frontend_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(frontend_dir)), name="static")
+    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
