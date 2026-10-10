@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/voxpulse-animated-banner.svg" alt="VoxPulse Studio Banner" width="100%">
+  <img src="assets/brand/voxpulse-banner.png" alt="VoxPulse Studio Banner" width="100%">
 </p>
 
 <p align="center">
