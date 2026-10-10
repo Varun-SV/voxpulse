@@ -59,6 +59,15 @@ class EngineManager:
         # If voice provided, verify or match
         voice_id = req.voice or "af_heart"
         
+        # Process script for director notes / stage directions [Deep], [Speaking slowly], etc.
+        from backend.app.services.text_preprocessor import TextPreprocessor
+        clean_text, speed, pitch, emotion = TextPreprocessor.process_script(
+            text=req.text,
+            current_speed=req.speed,
+            current_pitch=req.pitch,
+            current_emotion=req.emotion
+        )
+
         # Decode reference audio if cloning sample provided
         ref_bytes = None
         if req.reference_audio_base64:
@@ -69,18 +78,21 @@ class EngineManager:
 
         start_time = time.perf_counter()
         audio_data = await engine.synthesize(
-            text=req.text,
+            text=clean_text,
             voice=voice_id,
-            speed=req.speed,
-            pitch=req.pitch,
+            speed=speed,
+            pitch=pitch,
             format=req.format,
             reference_audio=ref_bytes,
-            emotion=req.emotion
+            emotion=emotion
         )
         latency_ms = (time.perf_counter() - start_time) * 1000.0
         return audio_data, latency_ms
 
     async def compare(self, text: str, engine_ids: list[str]) -> list[dict]:
+        from backend.app.services.text_preprocessor import TextPreprocessor
+        clean_text, speed, pitch, _ = TextPreprocessor.process_script(text)
+
         results = []
         for eng_id in engine_ids:
             if eng_id not in self._engines:
@@ -90,7 +102,7 @@ class EngineManager:
             default_voice = voices[0].id if voices else "default"
             
             start_time = time.perf_counter()
-            audio_bytes = await eng.synthesize(text=text, voice=default_voice, speed=1.0)
+            audio_bytes = await eng.synthesize(text=clean_text, voice=default_voice, speed=speed, pitch=pitch)
             latency_ms = round((time.perf_counter() - start_time) * 1000.0, 1)
             
             results.append({
