@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VoxPulse Studio | Universal Open-Source Self-Hosted TTS</title>
+  <meta name="description" content="Self-hosted speech studio supporting Kokoro, Piper, XTTS, F5-TTS, and more with an OpenAI-compatible API gateway.">
+  <link rel="icon" type="image/svg+xml" href="/assets/brand/voxpulse-logo.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5v14M7 8v8M22 10v4M2 11v2" />
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <span class="brand-name">VoxPulse</span>
+          <span class="brand-tag">Studio</span>
+        </div>
+      </div>
+
+      <nav class="nav-tabs" role="tablist">
+        <button class="nav-tab active" data-tab="playground">Playground</button>
+        <button class="nav-tab" data-tab="shootout">Engine Shootout</button>
+        <button class="nav-tab" data-tab="dialogue">Dialogue Studio</button>
+        <button class="nav-tab" data-tab="cloning">Voice Cloning</button>
+        <button class="nav-tab" data-tab="api">OpenAI API</button>
+        <button class="nav-tab" data-tab="matrix">Engines Matrix</button>
+      </nav>
+
+      <div class="header-actions">
+        <div class="status-indicator" id="system-status-pill">
+          <span class="status-dot"></span>
+          <span class="status-text" id="status-label">Online</span>
+        </div>
+        <button class="icon-btn" id="theme-toggle" title="Toggle Light/Dark Theme">
+          <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+          </svg>
+          <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <a href="https://github.com/Varun-SV/voxpulse" target="_blank" rel="noopener" class="icon-btn github-btn" title="GitHub Repository">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <!-- TAB 1: STUDIO PLAYGROUND -->
+    <section class="tab-content active" id="tab-playground">
+      <div class="hero-strip">
+        <h1 class="hero-title">Text Synthesis Playground</h1>
+        <p class="hero-subtitle">Synthesize lifelike speech across open-source neural engines with human-grade prosody.</p>
+      </div>
+
+      <div class="studio-layout">
+        <div class="studio-left">
+          <div class="card editor-card">
+            <div class="card-header">
+              <label class="section-label">Input Script</label>
+              <div class="preset-pills">
+                <button class="pill-btn active" data-preset="narrative">Storytelling</button>
+                <button class="pill-btn" data-preset="conversational">Dialogue</button>
+                <button class="pill-btn" data-preset="technical">Technical</button>
+                <button class="pill-btn" data-preset="news">Broadcast</button>
+              </div>
+            </div>
+            <textarea id="synthesis-text" class="text-editor" rows="6" placeholder="Type or paste any text to convert to lifelike speech...">Welcome to VoxPulse Studio. Synthesize high-quality speech effortlessly using our next-generation open-source engines. Select your voice and experience real-time performance.</textarea>
+            <div class="editor-footer">
+              <span class="char-count" id="char-count">194 characters</span>
+              <button class="clear-btn" id="btn-clear-text">Clear</button>
+            </div>
+          </div>
+
+          <!-- Controls Grid -->
+          <div class="card controls-card">
+            <div class="controls-row">
+              <div class="control-group">
+                <label>Speech Engine</label>
+                <div class="select-wrapper">
+                  <select id="engine-select">
+                    <option value="kokoro" selected>Kokoro-82M (Ultra-Fast ONNX)</option>
+                    <option value="piper">Piper TTS (Instant VITS)</option>
+                    <option value="edge">Edge Neural TTS (100+ Voices)</option>
+                    <option value="xtts">Coqui XTTS-v2 (Zero-Shot Cloning)</option>
+                    <option value="f5">F5-TTS (Flow-Matching Diffusion)</option>
+                    <option value="chattts">ChatTTS (Conversational Dialogue)</option>
+                    <option value="zonos">Zonos-v2 (Expressive MoE)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="control-group">
+                <label>Target Voice</label>
+                <div class="select-wrapper">
+                  <select id="voice-select">
+                    <!-- Populated via API -->
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="sliders-row">
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Speed Multiplier</span>
+                  <span class="slider-val" id="speed-val">1.0x</span>
+                </div>
+                <input type="range" id="speed-slider" min="0.5" max="2.0" step="0.05" value="1.0">
+              </div>
+
+              <div class="slider-group">
+                <div class="slider-header">
+                  <span>Pitch Offset</span>
+                  <span class="slider-val" id="pitch-val">0.0</span>
+                </div>
+                <input type="range" id="pitch-slider" min="-5" max="5" step="0.5" value="0.0">
+              </div>
+
+              <div class="format-group">
+                <label>Format</label>
+                <div class="format-buttons">
+                  <button class="fmt-btn active" data-fmt="mp3">MP3</button>
+                  <button class="fmt-btn" data-fmt="wav">WAV</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-bar">
+              <button class="btn btn-primary" id="btn-synthesize">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span id="btn-synthesize-text">Generate Audio</span>
+              </button>
+              <div class="generation-metric" id="generation-metric" style="display: none;">
+                <span class="metric-badge" id="metric-latency">0 ms</span>
+                <span class="metric-badge" id="metric-engine">Kokoro-82M</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Waveform & Audio Player Card -->
+          <div class="card player-card">
+            <div class="visualizer-wrapper">
+              <canvas id="waveform-canvas" width="700" height="100"></canvas>
+            </div>
+            <audio id="audio-player" preload="auto"></audio>
+            <div class="player-controls">
+              <button class="play-btn" id="btn-play-pause" disabled>
+                <svg id="play-icon" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="6 4 20 12 6 20 6 4"></polygon>
+                </svg>
+                <svg id="pause-icon" viewBox="0 0 24 24" fill="currentColor" style="display:none;">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+              </button>
+              <div class="scrubber-wrapper">
+                <input type="range" id="audio-scrubber" min="0" max="100" value="0" disabled>
+                <div class="time-readout">
+                  <span id="time-current">0:00</span> / <span id="time-total">0:00</span>
+                </div>
+              </div>
+              <button class="btn-download" id="btn-download" disabled title="Download Audio File">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Sidebar & History -->
+        <div class="studio-right">
+          <div class="card info-card">
+            <div class="card-header">
+              <h3 class="card-title">Engine Profile</h3>
+              <span class="pill-badge" id="sidebar-engine-badge">Ultra-Fast</span>
+            </div>
+            <p class="sidebar-engine-desc" id="sidebar-engine-desc">
+              Kokoro-82M: Apache 2.0 licensed neural acoustic model. Produces expressive speech in under 80ms on standard CPUs.
+            </p>
+            <div class="spec-list">
+              <div class="spec-item">
+                <span class="spec-label">Latency Tier</span>
+                <span class="spec-val" id="spec-latency">&lt; 80ms</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">Hardware</span>
+                <span class="spec-val" id="spec-hw">CPU or GPU</span>
+              </div>
+              <div class="spec-item">
+                <span class="spec-label">Voice Cloning</span>
+                <span class="spec-val" id="spec-cloning">Fixed High-Quality</span>
+              </div>
+            </div>
+            <div class="card-divider"></div>
+            <div class="openai-compat-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5h-2v-2h2zm0-4h-2V7h2z"/>
+              </svg>
+              <span>OpenAI API Compatible: <code>/v1/audio/speech</code></span>
+            </div>
+          </div>
+
+          <!-- History Drawer -->
+          <div class="card history-card">
+            <div class="card-header">
+              <h3 class="card-title">Recent Generations</h3>
+              <button class="clear-btn" id="btn-clear-history">Clear</button>
+            </div>
+            <div class="history-list" id="history-list">
+              <div class="history-empty">No clips generated yet. Hit "Generate Audio" to test!</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ENGINE SHOOTOUT ARENA -->
+    <section class="tab-content" id="tab-shootout">
+      <div class="hero-strip">
+        <h1 class="hero-title">Multi-Engine Shootout Arena</h1>
+        <p class="hero-subtitle">Benchmark identical text across Kokoro, Piper, Edge, and F5-TTS side-by-side.</p>
+      </div>
+
+      <div class="shootout-container">
+        <div class="card editor-card">
+          <label class="section-label">Benchmark Phrase</label>
+          <textarea id="shootout-text" class="text-editor" rows="3">The future of artificial intelligence is open, private, and hosted on your own terms.</textarea>
+          <div class="shootout-actions">
+            <button class="btn btn-primary" id="btn-run-shootout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+              Run Side-by-Side Comparison
+            </button>
+          </div>
+        </div>
+
+        <div class="shootout-results-grid" id="shootout-results">
+          <!-- Dynamically populated comparison cards -->
+          <div class="empty-state">Click "Run Side-by-Side Comparison" to benchmark multiple engines simultaneously.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: MULTI-SPEAKER DIALOGUE STUDIO -->
+    <section class="tab-content" id="tab-dialogue">
+      <div class="hero-strip">
+        <h1 class="hero-title">Multi-Speaker Dialogue & Podcast Studio</h1>
+        <p class="hero-subtitle">Compose conversational podcasts, interviews, and script readings with distinct voices.</p>
+      </div>
+
+      <div class="dialogue-container">
+        <div class="dialogue-header-bar">
+          <input type="text" id="dialogue-title" class="dialogue-title-input" value="The Open-Source Speech Revolution (Episode 1)">
+          <div class="dialogue-actions">
+            <button class="btn btn-secondary" id="btn-add-line">+ Add Line</button>
+            <button class="btn btn-primary" id="btn-render-dialogue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              Render Master Track
+            </button>
+          </div>
+        </div>
+
+        <div class="dialogue-lines-list" id="dialogue-lines">
+          <!-- Preloaded starter dialogue -->
+          <div class="dialogue-line-card" data-idx="0">
+            <div class="line-meta">
+              <div class="speaker-pill speaker-host">Host</div>
+              <select class="line-voice-select">
+                <option value="af_heart" selected>Kokoro: Heart (US)</option>
+                <option value="en_US-lessac-medium">Piper: Lessac (US)</option>
+                <option value="en-US-JennyNeural">Edge: Jenny (US)</option>
+              </select>
+            </div>
+            <textarea class="line-text">Welcome back everyone. Today we are looking at self-hosted open-source speech synthesis running entirely inside Docker.</textarea>
+            <button class="line-remove-btn" title="Delete Line">&times;</button>
+          </div>
+
+          <div class="dialogue-line-card" data-idx="1">
+            <div class="line-meta">
+              <div class="speaker-pill speaker-guest">Guest</div>
+              <select class="line-voice-select">
+                <option value="am_adam" selected>Kokoro: Adam (US)</option>
+                <option value="en_US-ryan-high">Piper: Ryan (US)</option>
+                <option value="en-US-ChristopherNeural">Edge: Christopher (US)</option>
+              </select>
+            </div>
+            <textarea class="line-text">Thanks for having me! What is remarkable is the speed: models like Kokoro-82M generate audio in under 50 milliseconds without needing a dedicated GPU.</textarea>
+            <button class="line-remove-btn" title="Delete Line">&times;</button>
+          </div>
+
+          <div class="dialogue-line-card" data-idx="2">
+            <div class="line-meta">
+              <div class="speaker-pill speaker-host">Host</div>
+              <select class="line-voice-select">
+                <option value="af_heart" selected>Kokoro: Heart (US)</option>
+                <option value="en_US-lessac-medium">Piper: Lessac (US)</option>
+                <option value="en-US-JennyNeural">Edge: Jenny (US)</option>
+              </select>
+            </div>
+            <textarea class="line-text">And because it exposes an OpenAI-compatible speech endpoint, any chatbot or AI agent can switch over effortlessly!</textarea>
+            <button class="line-remove-btn" title="Delete Line">&times;</button>
+          </div>
+        </div>
+
+        <!-- Master Track Result -->
+        <div class="card dialogue-master-card" id="dialogue-master-card" style="display:none;">
+          <h3>Master Assembled Podcast Track</h3>
+          <div class="dialogue-player-row">
+            <audio id="dialogue-master-audio" controls style="width: 100%;"></audio>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: VOICE CLONING LAB -->
+    <section class="tab-content" id="tab-cloning">
+      <div class="hero-strip">
+        <h1 class="hero-title">Zero-Shot Voice Cloning Lab</h1>
+        <p class="hero-subtitle">Upload 3–10 seconds of clear speaker reference audio to synthesize speech in their unique voice.</p>
+      </div>
+
+      <div class="cloning-grid">
+        <div class="card cloning-upload-card">
+          <label class="section-label">1. Speaker Reference Audio</label>
+          <div class="drop-zone" id="audio-drop-zone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="upload-icon">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            <p class="drop-title">Drag & drop speaker sample (.wav or .mp3)</p>
+            <p class="drop-sub">Ideal duration: 3 to 10 seconds of clear, isolated speech without background music.</p>
+            <input type="file" id="clone-file-input" accept="audio/*" style="display:none;">
+            <button class="btn btn-secondary" id="btn-browse-audio">Browse Audio File</button>
+          </div>
+          <div id="file-chosen-preview" class="file-chosen" style="display: none;">
+            <span id="file-chosen-name">sample.wav</span>
+            <button class="clear-btn" id="btn-remove-clone-file">&times;</button>
+          </div>
+        </div>
+
+        <div class="card cloning-prompt-card">
+          <label class="section-label">2. Target Speech to Synthesize</label>
+          <textarea id="clone-text" class="text-editor" rows="4">Hello! This is a zero-shot voice clone synthesized using open-source deep neural models.</textarea>
+          
+          <div class="control-group" style="margin-top: 1rem;">
+            <label>Cloning Engine</label>
+            <select id="cloning-engine-select">
+              <option value="xtts">Coqui XTTS-v2 (17 Languages, Cross-Lingual)</option>
+              <option value="f5">F5-TTS (Flow-Matching Natural Prosody)</option>
+              <option value="zonos">Zonos-v2 (Conditioned Expressive)</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary" id="btn-clone-synthesize" style="margin-top: 1.5rem; width: 100%;">
+            Synthesize Cloned Voice
+          </button>
+          <div id="clone-result-card" style="margin-top: 1.5rem; display:none;">
+            <audio id="clone-audio-player" controls style="width: 100%;"></audio>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: OPENAI API HUB -->
+    <section class="tab-content" id="tab-api">
+      <div class="hero-strip">
+        <h1 class="hero-title">OpenAI Drop-In API Gateway</h1>
+        <p class="hero-subtitle">Connect Open WebUI, LibreChat, Obsidian, Home Assistant, or your Python scripts directly.</p>
+      </div>
+
+      <div class="api-docs-container">
+        <div class="card code-card">
+          <div class="card-header">
+            <span class="code-tab active" data-lang="python">Python (Official OpenAI SDK)</span>
+            <span class="code-tab" data-lang="curl">cURL</span>
+            <span class="code-tab" data-lang="js">Node.js / JS</span>
+          </div>
+          <div class="code-block-wrapper">
+            <pre><code id="api-code-snippet">from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://localhost:8000/v1",
+    api_key="not-needed"
+)
+
+response = client.audio.speech.create(
+    model="voxpulse-kokoro",  # or "tts-1", "voxpulse-piper", "voxpulse-f5"
+    voice="alloy",            # maps to local af_heart
+    input="Hello from self-hosted VoxPulse Studio!"
+)
+
+response.stream_to_file("output.mp3")</code></pre>
+          </div>
+        </div>
+
+        <div class="api-grid">
+          <div class="card">
+            <h3>Open WebUI Integration</h3>
+            <p>Go to <strong>Settings &rarr; Audio &rarr; Text-to-Speech (TTS)</strong>:</p>
+            <ul>
+              <li><strong>TTS Engine:</strong> OpenAI</li>
+              <li><strong>API Base URL:</strong> <code>http://host.docker.internal:8000/v1</code></li>
+              <li><strong>API Key:</strong> <code>voxpulse</code></li>
+              <li><strong>Voice:</strong> <code>alloy</code> or <code>af_heart</code></li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>LibreChat Integration</h3>
+            <p>Add to your <code>librechat.yaml</code>:</p>
+            <pre class="yaml-pre"><code>tts:
+  openai:
+    url: "http://localhost:8000/v1/audio/speech"
+    apiKey: "dummy-key"
+    model: "tts-1"
+    voice: "alloy"</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 6: ENGINES MATRIX -->
+    <section class="tab-content" id="tab-matrix">
+      <div class="hero-strip">
+        <h1 class="hero-title">Open-Source TTS Ecosystem Matrix</h1>
+        <p class="hero-subtitle">Detailed technical comparison of self-hosted engines supported by VoxPulse Studio.</p>
+      </div>
+
+      <div class="card matrix-card">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Engine</th>
+              <th>Architecture</th>
+              <th>Hardware</th>
+              <th>Latency / RTF</th>
+              <th>Voice Cloning</th>
+              <th>License</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Kokoro-82M</strong></td>
+              <td>StyleTTS2 / ONNX</td>
+              <td><span class="badge-tag cpu">CPU / GPU</span></td>
+              <td>&lt; 80ms (Ultra-Fast)</td>
+              <td>40+ Pre-trained Voices</td>
+              <td><span class="badge-tag license">Apache 2.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Piper TTS</strong></td>
+              <td>VITS / Acoustic</td>
+              <td><span class="badge-tag cpu">CPU / Edge</span></td>
+              <td>&lt; 50ms (Instant)</td>
+              <td>Model Finetune</td>
+              <td><span class="badge-tag license">MIT</span></td>
+            </tr>
+            <tr>
+              <td><strong>F5-TTS</strong></td>
+              <td>Flow-Matching Diffusion</td>
+              <td><span class="badge-tag gpu">GPU Recommended</span></td>
+              <td>~ 300ms (Natural)</td>
+              <td>Zero-Shot (3s wav)</td>
+              <td><span class="badge-tag license">MIT</span></td>
+            </tr>
+            <tr>
+              <td><strong>Coqui XTTS-v2</strong></td>
+              <td>Autoregressive + HiFi</td>
+              <td><span class="badge-tag gpu">GPU Recommended</span></td>
+              <td>~ 400ms</td>
+              <td>Zero-Shot (17 Languages)</td>
+              <td><span class="badge-tag license">CPML</span></td>
+            </tr>
+            <tr>
+              <td><strong>ChatTTS</strong></td>
+              <td>Conversational Generative</td>
+              <td><span class="badge-tag gpu">GPU (4GB VRAM)</span></td>
+              <td>~ 350ms</td>
+              <td>Latent Seeds</td>
+              <td><span class="badge-tag license">OSS</span></td>
+            </tr>
+            <tr>
+              <td><strong>Zonos-v2 (Zyphra)</strong></td>
+              <td>MoE Transformer</td>
+              <td><span class="badge-tag gpu">GPU (6GB+ VRAM)</span></td>
+              <td>~ 300ms</td>
+              <td>Zero-Shot + Emotion</td>
+              <td><span class="badge-tag license">Apache 2.0</span></td>
+            </tr>
+            <tr>
+              <td><strong>Edge Neural TTS</strong></td>
+              <td>Deep Neural Vocoder</td>
+              <td><span class="badge-tag cpu">Lightweight</span></td>
+              <td>&lt; 120ms</td>
+              <td>100+ Studio Voices</td>
+              <td><span class="badge-tag license">Free</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <span class="footer-brand">VoxPulse Studio</span> &mdash; Universal Open-Source Speech Platform
+      </div>
+      <div class="footer-right">
+        <span>Dockerized &bull; OpenAI Compatible &bull; Apache 2.0</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

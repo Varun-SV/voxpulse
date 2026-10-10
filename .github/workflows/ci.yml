@@ -1,0 +1,30 @@
+name: Build & Verify Docker
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build VoxPulse Docker Image
+      run: |
+        docker compose build voxpulse
+
+    - name: Start VoxPulse Container
+      run: |
+        docker compose up -d voxpulse
+        sleep 5
+
+    - name: Test Health Endpoint
+      run: |
+        curl -f http://localhost:8000/api/health
+        curl -f http://localhost:8000/v1/models

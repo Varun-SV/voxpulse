@@ -1,0 +1,44 @@
+services:
+  voxpulse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: voxpulse:latest
+    container_name: voxpulse-studio
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEFAULT_ENGINE=kokoro
+      - DEFAULT_VOICE=af_heart
+    volumes:
+      - voxpulse-storage:/app/storage
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Optional GPU Profile: XTTS-v2 Voice Cloning Microservice
+  xtts-cloning:
+    image: ghcr.io/coqui-ai/tts-server:latest
+    container_name: voxpulse-xtts
+    profiles: ["gpu-cloning"]
+    ports:
+      - "8020:8020"
+    environment:
+      - MODEL_NAME=tts_models/multilingual/multi-dataset/xtts_v2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  voxpulse-storage:
+    name: voxpulse-storage

@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181715"/>
+      <stop offset="50%" stop-color="#23201c"/>
+      <stop offset="100%" stop-color="#181715"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ea580c"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="420" rx="20" fill="url(#bgGrad)" stroke="#3a362f" stroke-width="2"/>
+
+  <!-- Subtle grid lines -->
+  <g stroke="#2c2823" stroke-width="1" opacity="0.6">
+    <line x1="0" y1="70" x2="1200" y2="70"/>
+    <line x1="0" y1="140" x2="1200" y2="140"/>
+    <line x1="0" y1="210" x2="1200" y2="210"/>
+    <line x1="0" y1="280" x2="1200" y2="280"/>
+    <line x1="0" y1="350" x2="1200" y2="350"/>
+  </g>
+
+  <!-- Logo Mark -->
+  <g transform="translate(80, 75)">
+    <rect width="64" height="64" rx="14" fill="#c2410c"/>
+    <g stroke="#ffffff" stroke-width="4.5" stroke-linecap="round">
+      <line x1="32" y1="12" x2="32" y2="52"/>
+      <line x1="22" y1="20" x2="22" y2="44"/>
+      <line x1="42" y1="20" x2="42" y2="44"/>
+      <line x1="12" y1="27" x2="12" y2="37"/>
+      <line x1="52" y1="27" x2="52" y2="37"/>
+    </g>
+  </g>
+
+  <!-- Typography -->
+  <text x="165" y="115" font-family="'Instrument Serif', Georgia, serif" font-size="44" font-weight="600" fill="#faf6f0" letter-spacing="-0.5">VoxPulse Studio</text>
+  <rect x="475" y="86" width="100" height="28" rx="6" fill="#382515" stroke="#7c2d12" stroke-width="1"/>
+  <text x="492" y="105" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#fb923c" letter-spacing="1">v1.0.0 OSS</text>
+
+  <text x="80" y="185" font-family="system-ui, -apple-system, sans-serif" font-size="21" font-weight="400" fill="#d4cec3">
+    Universal Self-Hosted Speech Synthesis &amp; Audio Studio
+  </text>
+  <text x="80" y="218" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="400" fill="#8e877c">
+    Kokoro-82M &bull; Piper TTS &bull; Coqui XTTS-v2 &bull; F5-TTS Flow &bull; ChatTTS &bull; OpenAI /v1/audio/speech
+  </text>
+
+  <!-- Animated Soundwave Visualizer -->
+  <g transform="translate(80, 275)" filter="url(#glow)">
+    <!-- Bar 1 -->
+    <rect x="0" y="15" width="8" height="40" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="20;65;35;50;20" dur="1.8s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="25;2;17;10;25" dur="1.8s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 2 -->
+    <rect x="18" y="10" width="8" height="50" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="30;70;40;60;30" dur="1.4s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="20;0;15;5;20" dur="1.4s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 3 -->
+    <rect x="36" y="2" width="8" height="66" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="66;25;70;30;66" dur="1.6s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="2;22;0;20;2" dur="1.6s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 4 -->
+    <rect x="54" y="18" width="8" height="34" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="34;68;20;55;34" dur="2.1s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="18;1;25;7;18" dur="2.1s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 5 -->
+    <rect x="72" y="5" width="8" height="60" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="60;30;68;20;60" dur="1.5s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="5;20;1;25;5" dur="1.5s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 6 -->
+    <rect x="90" y="22" width="8" height="26" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="26;60;35;70;26" dur="1.7s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="22;5;17;0;22" dur="1.7s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 7 -->
+    <rect x="108" y="8" width="8" height="54" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="54;20;65;40;54" dur="1.9s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="8;25;2;15;8" dur="1.9s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 8 -->
+    <rect x="126" y="14" width="8" height="42" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="42;68;25;50;42" dur="1.3s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="14;1;22;10;14" dur="1.3s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 9 -->
+    <rect x="144" y="2" width="8" height="66" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="66;35;70;20;66" dur="1.7s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="2;17;0;25;2" dur="1.7s" repeatCount="indefinite"/>
+    </rect>
+    <!-- Bar 10 -->
+    <rect x="162" y="20" width="8" height="30" rx="4" fill="url(#accentGrad)">
+      <animate attributeName="height" values="30;60;22;65;30" dur="1.6s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="20;5;24;2;20" dur="1.6s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- Pills on right -->
+  <g transform="translate(840, 275)">
+    <rect width="280" height="42" rx="8" fill="#26231e" stroke="#3d372e" stroke-width="1"/>
+    <circle cx="22" cy="21" r="6" fill="#10b981"/>
+    <text x="38" y="26" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="500" fill="#e2ded4">docker compose up -d</text>
+  </g>
+</svg>
