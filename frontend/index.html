@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=4.0">
 </head>
 <body>
   <!-- Header Navigation -->
@@ -28,9 +28,9 @@
       </div>
 
       <nav class="nav-tabs" role="tablist">
-        <button class="nav-tab active" data-tab="playground">Playground</button>
+        <button class="nav-tab active" data-tab="editor">Editor</button>
+        <button class="nav-tab" data-tab="playground">Playground</button>
         <button class="nav-tab" data-tab="shootout">Engine Shootout</button>
-        <button class="nav-tab" data-tab="dialogue">Dialogue Studio</button>
         <button class="nav-tab" data-tab="cloning">Voice Cloning</button>
         <button class="nav-tab" data-tab="api">OpenAI API</button>
         <button class="nav-tab" data-tab="matrix">Engines Matrix</button>
@@ -61,7 +61,7 @@
 
   <main class="app-main">
     <!-- TAB 1: STUDIO PLAYGROUND -->
-    <section class="tab-content active" id="tab-playground">
+    <section class="tab-content" id="tab-playground">
       <div class="hero-strip">
         <h1 class="hero-title">Text Synthesis Playground</h1>
         <p class="hero-subtitle">Synthesize lifelike speech across open-source neural engines with human-grade prosody.</p>
@@ -260,136 +260,277 @@
       </div>
     </section>
 
-    <!-- TAB 3: MULTI-SPEAKER DIALOGUE STUDIO -->
-    <section class="tab-content" id="tab-dialogue">
-      <div class="hero-strip">
-        <h1 class="hero-title">Multi-Speaker Dialogue & Podcast Studio</h1>
-        <p class="hero-subtitle">Compose conversational podcasts, interviews, and script readings with distinct voices.</p>
-      </div>
-
-      <div class="dialogue-container">
-        <div class="dialogue-header-bar">
-          <input type="text" id="dialogue-title" class="dialogue-title-input" value="The Open-Source Speech Revolution (Episode 1)">
-          <div class="dialogue-actions">
-            <button class="btn btn-secondary" id="btn-add-line">+ Add Line</button>
-            <button class="btn btn-primary" id="btn-render-dialogue">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+    <!-- TAB: SCRIPT EDITOR & MULTI-TRACK DAW TIMELINE (Matching Studio Mockup) -->
+    <section class="tab-content active" id="tab-editor">
+      <div class="editor-workspace-wrapper">
+        <!-- Top Editor Action Bar -->
+        <div class="editor-top-bar">
+          <div class="editor-title-area">
+            <h1 class="editor-main-title">Editor - Script</h1>
+            <span class="editor-project-pill" id="editor-project-badge">Episode 1 (Open-Source Revolution)</span>
+          </div>
+          <div class="editor-top-actions">
+            <div class="dropdown-wrapper">
+              <button class="btn btn-secondary" id="btn-editor-scripts">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Scripts ▾
+              </button>
+              <div class="dropdown-menu" id="editor-scripts-dropdown" style="display:none;">
+                <div class="dropdown-item" data-script="podcast">🎙️ Tech Podcast: Kokoro &amp; Piper</div>
+                <div class="dropdown-item" data-script="interview">🔬 AI Keynote: F5-TTS &amp; XTTS</div>
+                <div class="dropdown-item" data-script="trailer">🎬 Cinematic Trailer (Multi-Beat)</div>
+              </div>
+            </div>
+            <button class="btn btn-primary" id="btn-editor-add-segment">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
               </svg>
-              Render Master Track
+              Add Segment
+            </button>
+            <button class="btn btn-secondary" id="btn-toggle-cloning-drawer" title="Toggle Voice Cloning Drawer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"/>
+                <path d="M12 6v6l4 2"/>
+              </svg>
+              Voice Cloning Lab
             </button>
           </div>
         </div>
 
-        <div class="dialogue-lines-list" id="dialogue-lines">
-          <!-- Preloaded starter dialogue with multiple engine support -->
-          <div class="dialogue-line-card" data-idx="0">
-            <div class="line-meta">
-              <div class="speaker-pill speaker-host">Host</div>
-              <select class="line-voice-select">
-                <optgroup label="Kokoro-82M (Ultra-Fast)">
-                  <option value="af_heart" data-engine="kokoro" selected>Kokoro: Heart (US Female)</option>
-                  <option value="am_adam" data-engine="kokoro">Kokoro: Adam (US Male)</option>
-                </optgroup>
-                <optgroup label="Piper TTS (Real-Time Edge)">
-                  <option value="en_US-lessac-medium" data-engine="piper">Piper: Lessac (US Female)</option>
-                  <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US Male)</option>
-                </optgroup>
-                <optgroup label="Edge Neural (Multilingual)">
-                  <option value="en-US-JennyNeural" data-engine="edge">Edge: Jenny (US Female)</option>
-                </optgroup>
-                <optgroup label="F5-TTS (Flow-Matching Diffusion)">
-                  <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow (US)</option>
-                  <option value="f5_deep_resonant" data-engine="f5">F5-TTS: Deep Resonance (US)</option>
-                </optgroup>
-                <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
-                  <option value="xtts_female_narrator" data-engine="xtts">XTTS-v2: Studio Clone (Female)</option>
-                </optgroup>
-                <optgroup label="ChatTTS (Conversational Prosody)">
-                  <option value="chattts_seed_2222" data-engine="chattts">ChatTTS: Conversational Female</option>
-                </optgroup>
-                <optgroup label="Zonos-v2 (Expressive Mamba)">
-                  <option value="zonos_expressive_dramatic" data-engine="zonos">Zonos: Dramatic Expressive</option>
-                </optgroup>
-              </select>
+        <!-- Main Middle Area: Script Canvas + Collapsible Cloning Drawer -->
+        <div class="editor-main-split">
+          <!-- Left/Center: Script Bubble Canvas -->
+          <div class="editor-canvas-column">
+            <div class="editor-bubble-list" id="editor-bubble-list">
+              <!-- Dynamically populated or preloaded segments -->
+              <div class="editor-segment-row host-row" data-seg-id="0">
+                <div class="segment-avatar-col">
+                  <div class="avatar-circle avatar-host">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                      <circle cx="12" cy="7" r="4"/>
+                      <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+                    </svg>
+                  </div>
+                  <span class="avatar-label">Host</span>
+                </div>
+                <div class="speech-bubble-card bubble-host">
+                  <div class="bubble-header">
+                    <span class="bubble-speaker-tag">Kokoro (Host)</span>
+                    <div class="bubble-controls">
+                      <select class="bubble-voice-select line-voice-select">
+                        <option value="af_heart" data-engine="kokoro" selected>Kokoro: Heart (US)</option>
+                        <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US)</option>
+                        <option value="f5_deep_resonant" data-engine="f5">F5-TTS: Deep Resonance</option>
+                      </select>
+                      <button class="bubble-play-btn" title="Synthesize and play this segment">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                      </button>
+                      <button class="bubble-delete-btn" title="Delete segment">&times;</button>
+                    </div>
+                  </div>
+                  <textarea class="bubble-textarea">Welcome back to VoxPulse! Joining us is Piper to discuss open-source, self-hosted text-to-speech running entirely inside Docker, with zero latency and complete privacy.</textarea>
+                </div>
+              </div>
+
+              <div class="editor-segment-row guest-row" data-seg-id="1">
+                <div class="segment-avatar-col">
+                  <div class="avatar-circle avatar-guest">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                      <circle cx="12" cy="7" r="4"/>
+                      <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+                    </svg>
+                  </div>
+                  <span class="avatar-label">Guest</span>
+                </div>
+                <div class="speech-bubble-card bubble-guest">
+                  <div class="bubble-header">
+                    <span class="bubble-speaker-tag">Piper (Guest)</span>
+                    <div class="bubble-controls">
+                      <select class="bubble-voice-select line-voice-select">
+                        <option value="en_US-lessac-medium" data-engine="piper" selected>Piper: Lessac (US)</option>
+                        <option value="af_heart" data-engine="kokoro">Kokoro: Heart (US)</option>
+                        <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow</option>
+                      </select>
+                      <button class="bubble-play-btn" title="Synthesize and play this segment">
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                      </button>
+                      <button class="bubble-delete-btn" title="Delete segment">&times;</button>
+                    </div>
+                  </div>
+                  <textarea class="bubble-textarea">Thanks for having me, Kokoro. I'm excited to dive in. Running neural TTS on low-cost edge hardware without a dedicated GPU is genuinely revolutionary.</textarea>
+                </div>
+              </div>
             </div>
-            <textarea class="line-text">Welcome back everyone. Today we are looking at self-hosted open-source speech synthesis running entirely inside Docker.</textarea>
-            <button class="line-remove-btn" title="Delete Line">&times;</button>
           </div>
 
-          <div class="dialogue-line-card" data-idx="1">
-            <div class="line-meta">
-              <div class="speaker-pill speaker-guest">Guest</div>
-              <select class="line-voice-select">
-                <optgroup label="F5-TTS (Flow-Matching Diffusion)">
-                  <option value="f5_deep_resonant" data-engine="f5" selected>F5-TTS: Deep Resonance (US)</option>
-                  <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow (US)</option>
-                </optgroup>
-                <optgroup label="Kokoro-82M (Ultra-Fast)">
-                  <option value="am_adam" data-engine="kokoro">Kokoro: Adam (US Male)</option>
-                  <option value="af_heart" data-engine="kokoro">Kokoro: Heart (US Female)</option>
-                </optgroup>
-                <optgroup label="Piper TTS (Real-Time Edge)">
-                  <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US Male)</option>
-                  <option value="en_US-lessac-medium" data-engine="piper">Piper: Lessac (US Female)</option>
-                </optgroup>
-                <optgroup label="Edge Neural (Multilingual)">
-                  <option value="en-US-ChristopherNeural" data-engine="edge">Edge: Christopher (US Male)</option>
-                </optgroup>
-                <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
-                  <option value="xtts_male_broadcaster" data-engine="xtts">XTTS-v2: Studio Clone (Male)</option>
-                </optgroup>
-                <optgroup label="ChatTTS (Conversational Prosody)">
-                  <option value="chattts_seed_7869" data-engine="chattts">ChatTTS: Conversational Male</option>
-                </optgroup>
-                <optgroup label="Zonos-v2 (Expressive Mamba)">
-                  <option value="zonos_whisper_calm" data-engine="zonos">Zonos: Calm Whisper</option>
-                </optgroup>
-              </select>
+          <!-- Right: Collapsible Voice Cloning Lab Drawer (Matches Right Panel in Mockup) -->
+          <div class="editor-cloning-drawer" id="editor-cloning-drawer">
+            <div class="drawer-header">
+              <h3 class="drawer-title">Voice Cloning Lab</h3>
+              <button class="drawer-close-btn" id="btn-close-cloning-drawer" title="Close Drawer">&times;</button>
             </div>
-            <textarea class="line-text">Thanks for having me! What is remarkable is the flexibility: you can mix diffusion models like F5-TTS, low-latency ONNX models like Kokoro, and edge models like Piper in a single episode.</textarea>
-            <button class="line-remove-btn" title="Delete Line">&times;</button>
-          </div>
-
-          <div class="dialogue-line-card" data-idx="2">
-            <div class="line-meta">
-              <div class="speaker-pill speaker-host">Host</div>
-              <select class="line-voice-select">
-                <optgroup label="Kokoro-82M (Ultra-Fast)">
-                  <option value="af_heart" data-engine="kokoro" selected>Kokoro: Heart (US Female)</option>
-                  <option value="am_adam" data-engine="kokoro">Kokoro: Adam (US Male)</option>
-                </optgroup>
-                <optgroup label="Piper TTS (Real-Time Edge)">
-                  <option value="en_US-lessac-medium" data-engine="piper">Piper: Lessac (US Female)</option>
-                  <option value="en_US-ryan-high" data-engine="piper">Piper: Ryan (US Male)</option>
-                </optgroup>
-                <optgroup label="Edge Neural (Multilingual)">
-                  <option value="en-US-JennyNeural" data-engine="edge">Edge: Jenny (US Female)</option>
-                </optgroup>
-                <optgroup label="F5-TTS (Flow-Matching Diffusion)">
-                  <option value="f5_natural_prosody" data-engine="f5">F5-TTS: Natural Flow (US)</option>
-                </optgroup>
-                <optgroup label="Coqui XTTS-v2 (Voice Cloning)">
-                  <option value="xtts_female_narrator" data-engine="xtts">XTTS-v2: Studio Clone (Female)</option>
-                </optgroup>
-                <optgroup label="ChatTTS (Conversational Prosody)">
-                  <option value="chattts_seed_2222" data-engine="chattts">ChatTTS: Conversational Female</option>
-                </optgroup>
-                <optgroup label="Zonos-v2 (Expressive Mamba)">
-                  <option value="zonos_expressive_dramatic" data-engine="zonos">Zonos: Dramatic Expressive</option>
-                </optgroup>
-              </select>
+            <div class="drawer-body">
+              <div class="drawer-form-group">
+                <label class="drawer-label">Name new voice</label>
+                <input type="text" id="drawer-clone-name" class="drawer-input" placeholder="e.g. Studio Narrator">
+              </div>
+              <div class="drawer-form-group">
+                <label class="drawer-label">Language</label>
+                <select id="drawer-clone-lang" class="drawer-select">
+                  <option value="en-US" selected>English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="es-ES">Spanish</option>
+                  <option value="fr-FR">French</option>
+                  <option value="de-DE">German</option>
+                  <option value="ja-JP">Japanese</option>
+                </select>
+              </div>
+              <div class="drawer-form-group">
+                <label class="drawer-label">Upload Reference Audio</label>
+                <div class="drawer-dropzone" id="drawer-dropzone">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="drawer-upload-icon">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                  </svg>
+                  <span class="drawer-drop-text">Drag-and-drop upload here</span>
+                  <span class="drawer-drop-sub">3–10s WAV or MP3 audio</span>
+                  <input type="file" id="drawer-file-input" accept="audio/*" style="display:none;">
+                </div>
+              </div>
+              <button class="btn btn-primary btn-drawer-clone" id="btn-drawer-clone">Clone Voice</button>
             </div>
-            <textarea class="line-text">And because it exposes an OpenAI-compatible speech endpoint, any chatbot or AI agent can switch over effortlessly!</textarea>
-            <button class="line-remove-btn" title="Delete Line">&times;</button>
           </div>
         </div>
 
-        <!-- Master Track Result -->
-        <div class="card dialogue-master-card" id="dialogue-master-card" style="display:none;">
-          <h3>Master Assembled Podcast Track</h3>
-          <div class="dialogue-player-row">
-            <audio id="dialogue-master-audio" controls style="width: 100%;"></audio>
+        <!-- Bottom: Multi-Track DAW Waveform Timeline Panel (Matches Timeline in Mockup) -->
+        <div class="editor-timeline-panel card">
+          <!-- Timeline Transport Controls -->
+          <div class="timeline-transport-bar">
+            <div class="transport-left-controls">
+              <button class="btn btn-primary transport-btn" id="btn-timeline-play">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" id="tl-play-icon">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" id="tl-pause-icon" style="display:none;">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+                <span id="tl-play-text">Play</span>
+              </button>
+              <button class="btn btn-secondary transport-btn" id="btn-timeline-pause">Pause</button>
+              <button class="btn btn-secondary transport-btn" id="btn-timeline-render">Render Master</button>
+            </div>
+
+            <div class="transport-center-controls">
+              <button class="transport-nav-btn" id="btn-tl-prev" title="Step Back">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                  <line x1="5" y1="19" x2="5" y2="5" stroke="currentColor" stroke-width="2"></line>
+                </svg>
+              </button>
+              <button class="transport-nav-btn transport-play-circle" id="btn-tl-toggle" title="Play/Pause">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" id="tl-circle-play">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18" id="tl-circle-pause" style="display:none;">
+                  <rect x="6" y="4" width="4" height="16"></rect>
+                  <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+              </button>
+              <button class="transport-nav-btn" id="btn-tl-next" title="Step Forward">
+                <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                  <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                  <line x1="19" y1="5" x2="19" y2="19" stroke="currentColor" stroke-width="2"></line>
+                </svg>
+              </button>
+              <div class="timeline-time-display">
+                <span id="timeline-current-time">00:00:00</span> / <span id="timeline-total-time">00:01:30</span>
+              </div>
+            </div>
+
+            <div class="transport-right-controls">
+              <div class="timeline-zoom-wrapper">
+                <span class="zoom-label">Zoom</span>
+                <input type="range" id="timeline-zoom-slider" min="1" max="2.5" step="0.1" value="1">
+              </div>
+              <button class="btn btn-secondary transport-btn" id="btn-timeline-add-seg">+ Add Segment</button>
+            </div>
+          </div>
+
+          <!-- Multi-Track Canvas & Timeline Area -->
+          <div class="multi-track-container" id="multi-track-container">
+            <!-- Time Ruler Bar -->
+            <div class="timeline-ruler" id="timeline-ruler">
+              <div class="ruler-corner"></div>
+              <div class="ruler-ticks" id="ruler-ticks">
+                <span class="ruler-tick" style="left:0%">00:00:00</span>
+                <span class="ruler-tick" style="left:16.6%">00:00:15</span>
+                <span class="ruler-tick" style="left:33.3%">00:00:30</span>
+                <span class="ruler-tick" style="left:50%">00:00:45</span>
+                <span class="ruler-tick" style="left:66.6%">00:01:00</span>
+                <span class="ruler-tick" style="left:83.3%">00:01:15</span>
+                <span class="ruler-tick" style="left:100%">00:01:30</span>
+              </div>
+            </div>
+
+            <!-- Track Lanes -->
+            <div class="timeline-tracks-wrapper" id="timeline-tracks-wrapper">
+              <!-- Moving Playhead Needle -->
+              <div class="timeline-playhead" id="timeline-playhead">
+                <div class="playhead-handle"></div>
+                <div class="playhead-line"></div>
+              </div>
+
+              <!-- Track 1: Kokoro -->
+              <div class="timeline-track-row" id="track-row-kokoro">
+                <div class="track-header">
+                  <div class="avatar-circle avatar-host avatar-xs">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <circle cx="12" cy="7" r="4"/>
+                      <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+                    </svg>
+                  </div>
+                  <span class="track-name">Kokoro</span>
+                </div>
+                <div class="track-lane" id="lane-kokoro">
+                  <!-- Waveform block spanning 0:00 to 0:45 -->
+                  <div class="track-wave-block block-host" style="left: 0%; width: 50%;">
+                    <canvas class="track-waveform-canvas" id="canvas-wave-track-1" width="450" height="42"></canvas>
+                    <span class="wave-block-label">Kokoro (Host) &bull; 00:00:45</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Track 2: Piper -->
+              <div class="timeline-track-row" id="track-row-piper">
+                <div class="track-header">
+                  <div class="avatar-circle avatar-guest avatar-xs">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                      <circle cx="12" cy="7" r="4"/>
+                      <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+                    </svg>
+                  </div>
+                  <span class="track-name">Piper</span>
+                </div>
+                <div class="track-lane" id="lane-piper">
+                  <!-- Waveform block staggered from 0:45 to 1:30 -->
+                  <div class="track-wave-block block-guest" style="left: 50%; width: 50%;">
+                    <canvas class="track-waveform-canvas" id="canvas-wave-track-2" width="450" height="42"></canvas>
+                    <span class="wave-block-label">Piper (Guest) &bull; 00:00:45</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -594,6 +735,6 @@ response.stream_to_file("output.mp3")</code></pre>
     </div>
   </footer>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=4.0"></script>
 </body>
 </html>

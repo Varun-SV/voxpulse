@@ -241,63 +241,42 @@ document.addEventListener("DOMContentLoaded", () => {
         analyser.getByteFrequencyData(freqData);
         analyser.getByteTimeDomainData(timeData);
 
-        // 1. Compute dynamic speech RMS volume envelope from time-domain
-        let sumSq = 0;
-        for (let j = 0; j < bufferLength; j++) {
-          const norm = (timeData[j] - 128) / 128;
-          sumSq += norm * norm;
+        // 1. Dynamic speech RMS envelope & activity from time domain
+        let sumDev = 0;
+        for (let j = 0; j < bufferLength; j += 4) {
+          sumDev += Math.abs(timeData[j] - 128);
         }
-        const rms = Math.sqrt(sumSq / bufferLength); // speech envelope: ~0.02 (silence) to 0.35 (strong vowels)
-        const speechEnvelope = Math.min(1.0, rms * 4.2);
+        const avgDev = sumDev / (bufferLength / 4);
+        const speechActivity = Math.min(1.0, avgDev / 12.0); // 0 when silent, up to 1.0 during active speech
 
-        // Check overall frequency energy
-        let totalEnergy = 0;
-        for (let j = 0; j < 64; j++) totalEnergy += freqData[j];
-
-        if (totalEnergy > 10) {
-          // Real-time audio frequency stream is active
-          const sampleRate = audioCtx ? audioCtx.sampleRate : 44100;
-          const binHz = sampleRate / analyser.fftSize;
-
-          // Perceptual logarithmic mapping across the human speech spectrum (80 Hz to ~7,500 Hz)
-          const minFreq = 85;
-          const maxFreq = 7200;
-
+        if (speechActivity > 0.03) {
           for (let i = 0; i < barCount; i++) {
-            const ratio = i / (barCount - 1);
-            const centerFreq = minFreq * Math.pow(maxFreq / minFreq, ratio);
-            const centerBin = Math.round(centerFreq / binHz);
+            // 1. Time-domain acoustic displacement across entire buffer width
+            const tIdx = Math.min(bufferLength - 1, Math.floor(i * (bufferLength / barCount)));
+            const tAmp = Math.abs((timeData[tIdx] - 128) / 128);
 
-            // Cluster average around center bin to capture formants & consonants smoothly
-            const windowSpan = Math.max(1, Math.round(centerBin * 0.12));
-            let bandSum = 0;
-            let bandBins = 0;
-            const startBin = Math.max(0, centerBin - windowSpan);
-            const endBin = Math.min(bufferLength - 1, centerBin + windowSpan);
-            for (let b = startBin; b <= endBin; b++) {
-              bandSum += freqData[b];
-              bandBins++;
-            }
-            const rawMag = bandBins > 0 ? (bandSum / bandBins) / 255 : 0;
+            // 2. Speech formant frequency bin (80Hz to 4000Hz mapped smoothly across speech bins)
+            const fRatio = Math.pow(i / (barCount - 1), 1.25);
+            const fIdx = Math.min(bufferLength - 1, Math.floor(fRatio * Math.min(52, bufferLength * 0.45)) + 1);
+            const fAmp = (freqData[fIdx] || 0) / 255;
 
-            // Formant tilt compensation: natural speech rolls off ~-6dB/octave.
-            // Boost upper formants and fricatives so bars pulse across the entire width.
-            const tiltBoost = 1.0 + Math.pow(ratio, 1.15) * 2.4;
+            // 3. Smooth formant contour across vocal spectrum
+            const formantContour = Math.sin((i / (barCount - 1)) * Math.PI) * 0.35 + 0.65;
 
-            // Blend frequency magnitude with overall voice presence
-            const combined = (rawMag * 0.72 + speechEnvelope * 0.28) * tiltBoost;
-            const target = Math.max(8, Math.min(h * 0.88, combined * h * 0.95));
+            // 4. Organic blend: 65% instantaneous time wave + 35% frequency formant
+            const dynamicHeight = (tAmp * 0.65 + fAmp * 0.35) * formantContour;
+            const normalized = (dynamicHeight * 1.65 + speechActivity * 0.25);
+
+            // Dynamic height: scales between 14px (clean pill) and 88px (top peak)
+            const target = Math.max(14, Math.min(h * 0.90, normalized * h * 1.15));
             targetHeights[i] = target;
           }
         } else {
-          // Playback-synchronized procedural fallback if MediaElementAudioSource is blocked
+          // Graceful breathing wave during pauses or between words
           const curTime = sampleAudio ? sampleAudio.currentTime : 0;
-          const speechPulse = Math.sin(curTime * 5.2) * 0.4 + 0.6;
           for (let i = 0; i < barCount; i++) {
-            const wave1 = Math.sin(i * 0.24 + curTime * 8.0);
-            const wave2 = Math.cos(i * 0.16 - curTime * 5.1);
-            const target = Math.max(8, (Math.abs(wave1 * 0.6 + wave2 * 0.4) * speechPulse * 0.75 + 0.15) * h * 0.82);
-            targetHeights[i] = target;
+            const ambient = Math.sin(i * 0.28 + curTime * 3.5) * 6 + 15;
+            targetHeights[i] = ambient;
           }
         }
       } else {

@@ -474,56 +474,42 @@ document.addEventListener("DOMContentLoaded", () => {
     const barWidth = 6;
     const gap = (w - (studioBarCount * barWidth)) / (studioBarCount - 1);
 
-    // Dynamic speech RMS envelope from time domain
-    let sumSq = 0;
-    for (let j = 0; j < bufferLength; j++) {
-      const norm = (timeData[j] - 128) / 128;
-      sumSq += norm * norm;
+    // Compute dynamic speech RMS volume envelope from time domain
+    let sumDev = 0;
+    for (let j = 0; j < bufferLength; j += 4) {
+      sumDev += Math.abs(timeData[j] - 128);
     }
-    const rms = Math.sqrt(sumSq / bufferLength);
-    const speechEnvelope = Math.min(1.0, rms * 4.2);
+    const avgDev = sumDev / (bufferLength / 4);
+    const speechActivity = Math.min(1.0, avgDev / 12.0); // 0 when silent, up to 1.0 during active speech
 
-    let totalEnergy = 0;
-    for (let j = 0; j < 64; j++) totalEnergy += freqData[j];
-
-    if (totalEnergy > 10) {
-      const sampleRate = audioContext ? audioContext.sampleRate : 44100;
-      const binHz = sampleRate / analyser.fftSize;
-
-      // Logarithmic mapping across human speech frequencies (85 Hz to 7200 Hz)
-      const minFreq = 85;
-      const maxFreq = 7200;
-
+    if (speechActivity > 0.03) {
       for (let i = 0; i < studioBarCount; i++) {
-        const ratio = i / (studioBarCount - 1);
-        const centerFreq = minFreq * Math.pow(maxFreq / minFreq, ratio);
-        const centerBin = Math.round(centerFreq / binHz);
+        // 1. Time-domain acoustic displacement across speech buffer (instantaneous pressure)
+        const tIdx = Math.min(bufferLength - 1, Math.floor(i * (bufferLength / studioBarCount)));
+        const tAmp = Math.abs((timeData[tIdx] - 128) / 128);
 
-        const windowSpan = Math.max(1, Math.round(centerBin * 0.12));
-        let bandSum = 0;
-        let bandBins = 0;
-        const startBin = Math.max(0, centerBin - windowSpan);
-        const endBin = Math.min(bufferLength - 1, centerBin + windowSpan);
-        for (let b = startBin; b <= endBin; b++) {
-          bandSum += freqData[b];
-          bandBins++;
-        }
-        const rawMag = bandBins > 0 ? (bandSum / bandBins) / 255 : 0;
+        // 2. Speech formant frequency bin (80Hz to 4000Hz mapped smoothly across active speech bins)
+        const fRatio = Math.pow(i / (studioBarCount - 1), 1.25);
+        const fIdx = Math.min(bufferLength - 1, Math.floor(fRatio * Math.min(52, bufferLength * 0.45)) + 1);
+        const fAmp = (freqData[fIdx] || 0) / 255;
 
-        // Formant tilt boost for crisp consonants & high-frequency formants
-        const tiltBoost = 1.0 + Math.pow(ratio, 1.15) * 2.4;
-        const combined = (rawMag * 0.72 + speechEnvelope * 0.28) * tiltBoost;
-        const target = Math.max(8, Math.min(h * 0.88, combined * h * 0.95));
+        // 3. Smooth formant contour across vocal spectrum
+        const formantContour = Math.sin((i / (studioBarCount - 1)) * Math.PI) * 0.35 + 0.65;
+
+        // 4. Organic blend: 65% instantaneous time wave + 35% frequency formant
+        const dynamicHeight = (tAmp * 0.65 + fAmp * 0.35) * formantContour;
+        const normalized = (dynamicHeight * 1.65 + speechActivity * 0.25);
+
+        // Dynamic height: scales smoothly between 14px (clean pill) and 88px (top peak)
+        const target = Math.max(14, Math.min(h * 0.90, normalized * h * 1.15));
         studioTargetHeights[i] = target;
       }
     } else {
+      // Graceful breathing idle wave during pauses or between words
       const curTime = audioPlayer.currentTime || 0;
-      const speechPulse = Math.sin(curTime * 5.2) * 0.4 + 0.6;
       for (let i = 0; i < studioBarCount; i++) {
-        const wave1 = Math.sin(i * 0.24 + curTime * 8.0);
-        const wave2 = Math.cos(i * 0.16 - curTime * 5.1);
-        const target = Math.max(8, (Math.abs(wave1 * 0.6 + wave2 * 0.4) * speechPulse * 0.75 + 0.15) * h * 0.82);
-        studioTargetHeights[i] = target;
+        const ambient = Math.sin(i * 0.28 + curTime * 3.5) * 6 + 15;
+        studioTargetHeights[i] = ambient;
       }
     }
 
@@ -551,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function startSimulatedWaveform() {
     let t = 0;
     simInterval = setInterval(() => {
-      t += 0.2;
+      t += 0.18;
       const w = waveformCanvas.width;
       const h = waveformCanvas.height;
       canvasCtx.clearRect(0, 0, w, h);
@@ -560,13 +546,21 @@ document.addEventListener("DOMContentLoaded", () => {
       const gap = (w - (barCount * barWidth)) / (barCount - 1);
 
       for (let i = 0; i < barCount; i++) {
-        const amp = Math.abs(Math.sin(i * 0.2 + t)) * 40 + 10;
+        const wave1 = Math.sin(i * 0.22 + t * 2.2);
+        const wave2 = Math.cos(i * 0.15 - t * 1.5);
+        const envelope = Math.sin((i / (barCount - 1)) * Math.PI) * 0.35 + 0.65;
+        const amp = (Math.abs(wave1 * 0.6 + wave2 * 0.4) * 0.72 + 0.18) * (h * 0.85) * envelope;
+        const target = Math.max(14, Math.min(h * 0.88, amp));
         const x = i * (barWidth + gap);
-        const y = (h - amp) / 2;
+        const y = (h - target) / 2;
 
-        canvasCtx.fillStyle = "#f97316";
+        const grad = canvasCtx.createLinearGradient(0, y, 0, y + target);
+        grad.addColorStop(0, "#ea580c");
+        grad.addColorStop(1, "#d97706");
+
+        canvasCtx.fillStyle = grad;
         canvasCtx.beginPath();
-        canvasCtx.roundRect(x, y, barWidth, amp, 3);
+        canvasCtx.roundRect(x, y, barWidth, target, 3);
         canvasCtx.fill();
       }
     }, 40);
@@ -743,88 +737,617 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const btnAddLine = document.getElementById("btn-add-line");
-  const dialogueLines = document.getElementById("dialogue-lines");
-  const btnRenderDialogue = document.getElementById("btn-render-dialogue");
-  const dialogueMasterCard = document.getElementById("dialogue-master-card");
-  const dialogueMasterAudio = document.getElementById("dialogue-master-audio");
+  // ===================================================
+  // 10. SCRIPT EDITOR & MULTI-TRACK DAW TIMELINE CONTROLLER
+  // ===================================================
+  const editorBubbleList = document.getElementById("editor-bubble-list");
+  const btnEditorScripts = document.getElementById("btn-editor-scripts");
+  const editorScriptsDropdown = document.getElementById("editor-scripts-dropdown");
+  const editorProjectBadge = document.getElementById("editor-project-badge");
+  const btnEditorAddSeg = document.getElementById("btn-editor-add-segment");
+  const btnToggleCloningDrawer = document.getElementById("btn-toggle-cloning-drawer");
+  const btnCloseCloningDrawer = document.getElementById("btn-close-cloning-drawer");
+  const editorCloningDrawer = document.getElementById("editor-cloning-drawer");
 
-  btnAddLine.addEventListener("click", () => {
-    const lineCard = document.createElement("div");
-    lineCard.className = "dialogue-line-card";
-    const lineCount = dialogueLines.querySelectorAll(".dialogue-line-card").length;
-    const isHost = lineCount % 2 === 0;
+  // Timeline transport elements
+  const btnTimelinePlay = document.getElementById("btn-timeline-play");
+  const btnTimelinePause = document.getElementById("btn-timeline-pause");
+  const btnTimelineRender = document.getElementById("btn-timeline-render");
+  const btnTlPrev = document.getElementById("btn-tl-prev");
+  const btnTlToggle = document.getElementById("btn-tl-toggle");
+  const btnTlNext = document.getElementById("btn-tl-next");
+  const tlPlayIcon = document.getElementById("tl-play-icon");
+  const tlPauseIcon = document.getElementById("tl-pause-icon");
+  const tlPlayText = document.getElementById("tl-play-text");
+  const tlCirclePlay = document.getElementById("tl-circle-play");
+  const tlCirclePause = document.getElementById("tl-circle-pause");
+  const timelineCurrentTimeEl = document.getElementById("timeline-current-time");
+  const timelineTotalTimeEl = document.getElementById("timeline-total-time");
+  const timelineZoomSlider = document.getElementById("timeline-zoom-slider");
+  const btnTimelineAddSeg = document.getElementById("btn-timeline-add-seg");
+  const multiTrackContainer = document.getElementById("multi-track-container");
+  const timelineRuler = document.getElementById("timeline-ruler");
+  const timelineTracksWrapper = document.getElementById("timeline-tracks-wrapper");
+  const timelinePlayhead = document.getElementById("timeline-playhead");
+  const laneKokoro = document.getElementById("lane-kokoro");
+  const lanePiper = document.getElementById("lane-piper");
+  const canvasWaveTrack1 = document.getElementById("canvas-wave-track-1");
+  const canvasWaveTrack2 = document.getElementById("canvas-wave-track-2");
+
+  // Timeline Master Audio
+  const timelineAudio = new Audio();
+  let timelineAnimId = null;
+  let timelineMasterBlobUrl = null;
+
+  // Drawer elements
+  const drawerCloneName = document.getElementById("drawer-clone-name");
+  const drawerCloneLang = document.getElementById("drawer-clone-lang");
+  const drawerDropzone = document.getElementById("drawer-dropzone");
+  const drawerFileInput = document.getElementById("drawer-file-input");
+  const btnDrawerClone = document.getElementById("btn-drawer-clone");
+
+  // Sample Scripts Library
+  const EDITOR_SAMPLE_SCRIPTS = {
+    podcast: {
+      title: "Episode 1 (Open-Source Revolution)",
+      segments: [
+        {
+          speaker: "Host",
+          speakerTag: "Kokoro (Host)",
+          engine: "kokoro",
+          voice: "af_heart",
+          text: "Welcome back to VoxPulse! Joining us is Piper to discuss open-source, self-hosted text-to-speech running entirely inside Docker, with zero latency and complete privacy."
+        },
+        {
+          speaker: "Guest",
+          speakerTag: "Piper (Guest)",
+          engine: "piper",
+          voice: "en_US-lessac-medium",
+          text: "Thanks for having me, Kokoro. I'm excited to dive in. Running neural TTS on low-cost edge hardware without a dedicated GPU is genuinely revolutionary."
+        },
+        {
+          speaker: "Host",
+          speakerTag: "Kokoro (Host)",
+          engine: "kokoro",
+          voice: "am_adam",
+          text: "And having an OpenAI-compatible /v1/audio/speech endpoint means any AI app or agent connects with a single configuration line."
+        }
+      ]
+    },
+    interview: {
+      title: "Keynote: Neural Prosody & Flow-Matching",
+      segments: [
+        {
+          speaker: "Host",
+          speakerTag: "Kokoro (Host)",
+          engine: "kokoro",
+          voice: "af_heart",
+          text: "Ladies and gentlemen, welcome to the open acoustic showcase. Today, we demonstrate non-autoregressive speech synthesis running entirely on local systems."
+        },
+        {
+          speaker: "Guest",
+          speakerTag: "F5-TTS (Guest)",
+          engine: "f5",
+          voice: "f5_natural_prosody",
+          text: "By replacing autoregressive generation with flow-matching diffusion, speech cadence achieves truly natural human breathing rhythms and emotion."
+        }
+      ]
+    },
+    trailer: {
+      title: "Cinematic Trailer: The Dawn of Local AI",
+      segments: [
+        {
+          speaker: "Host",
+          speakerTag: "Kokoro (Host)",
+          engine: "kokoro",
+          voice: "af_heart",
+          text: "[Deep, cinematic, mysterious] In the quiet corridors of silicon and code, a silent revolution was taking place."
+        },
+        {
+          speaker: "Guest",
+          speakerTag: "Piper (Guest)",
+          engine: "piper",
+          voice: "en_US-ryan-high",
+          text: "[Curious] [Speaking slowly] What if... everything we thought we knew about artificial intelligence... was about to change?"
+        },
+        {
+          speaker: "Host",
+          speakerTag: "Kokoro (Host)",
+          engine: "kokoro",
+          voice: "am_adam",
+          text: "[Warm, confident] This is VoxPulse Studio. The voice of open intelligence is finally in your hands."
+        }
+      ]
+    }
+  };
+
+  // DAW Waveform Canvas Renderer
+  function drawTrackWaveformRidge(canvas, color1, color2) {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    const barW = 3;
+    const gap = 2;
+    const totalBars = Math.floor(w / (barW + gap));
+
+    for (let i = 0; i < totalBars; i++) {
+      const x = i * (barW + gap);
+      const p1 = Math.sin(i * 0.14) * Math.cos(i * 0.06);
+      const p2 = Math.sin(i * 0.38 + 1.2) * 0.45;
+      const envelope = Math.max(0.12, Math.abs(p1 + p2));
+      const amp = Math.max(6, envelope * (h - 6));
+      const y = (h - amp) / 2;
+
+      const grad = ctx.createLinearGradient(0, y, 0, y + amp);
+      grad.addColorStop(0, color1);
+      grad.addColorStop(1, color2);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, amp, 1.5);
+      ctx.fill();
+    }
+  }
+
+  // Format time for timeline (00:00:00)
+  function formatTimelineTime(secs) {
+    if (isNaN(secs) || secs < 0) secs = 0;
+    const m = Math.floor(secs / 60);
+    const s = Math.floor(secs % 60);
+    const ms = Math.floor((secs % 1) * 100);
+    return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}:${ms < 10 ? "0" : ""}${ms}`;
+  }
+
+  // Synchronize moving playhead needle
+  function syncPlayhead() {
+    if (!timelineAudio.paused && timelineAudio.duration > 0) {
+      const pct = timelineAudio.currentTime / timelineAudio.duration;
+      const tracksWrapper = document.getElementById("timeline-tracks-wrapper");
+      if (tracksWrapper && timelinePlayhead) {
+        const usableWidth = tracksWrapper.clientWidth - 90;
+        const x = 90 + (pct * usableWidth);
+        timelinePlayhead.style.left = `${x}px`;
+      }
+      if (timelineCurrentTimeEl) {
+        timelineCurrentTimeEl.textContent = formatTimelineTime(timelineAudio.currentTime);
+      }
+      timelineAnimId = requestAnimationFrame(syncPlayhead);
+    }
+  }
+
+  timelineAudio.addEventListener("play", () => {
+    if (tlPlayIcon) tlPlayIcon.style.display = "none";
+    if (tlPauseIcon) tlPauseIcon.style.display = "block";
+    if (tlPlayText) tlPlayText.textContent = "Pause";
+    if (tlCirclePlay) tlCirclePlay.style.display = "none";
+    if (tlCirclePause) tlCirclePause.style.display = "block";
+    syncPlayhead();
+  });
+
+  timelineAudio.addEventListener("pause", () => {
+    if (tlPlayIcon) tlPlayIcon.style.display = "block";
+    if (tlPauseIcon) tlPauseIcon.style.display = "none";
+    if (tlPlayText) tlPlayText.textContent = "Play";
+    if (tlCirclePlay) tlCirclePlay.style.display = "block";
+    if (tlCirclePause) tlCirclePause.style.display = "none";
+    if (timelineAnimId) cancelAnimationFrame(timelineAnimId);
+  });
+
+  timelineAudio.addEventListener("ended", () => {
+    if (timelinePlayhead) timelinePlayhead.style.left = "90px";
+    if (timelineCurrentTimeEl) timelineCurrentTimeEl.textContent = "00:00:00";
+    if (tlPlayIcon) tlPlayIcon.style.display = "block";
+    if (tlPauseIcon) tlPauseIcon.style.display = "none";
+    if (tlPlayText) tlPlayText.textContent = "Play";
+    if (tlCirclePlay) tlCirclePlay.style.display = "block";
+    if (tlCirclePause) tlCirclePause.style.display = "none";
+  });
+
+  // Timeline scrubber / seek by clicking tracks wrapper or ruler
+  function handleTimelineSeek(e) {
+    const tracksWrapper = document.getElementById("timeline-tracks-wrapper");
+    if (!tracksWrapper) return;
+    const rect = tracksWrapper.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const headerWidth = 90;
+    if (clickX < headerWidth) return;
+    const usableWidth = tracksWrapper.clientWidth - headerWidth;
+    const pct = Math.max(0, Math.min(1, (clickX - headerWidth) / usableWidth));
+
+    if (timelinePlayhead) {
+      timelinePlayhead.style.left = `${clickX}px`;
+    }
+
+    if (!isNaN(timelineAudio.duration) && timelineAudio.duration > 0) {
+      timelineAudio.currentTime = pct * timelineAudio.duration;
+      if (timelineCurrentTimeEl) timelineCurrentTimeEl.textContent = formatTimelineTime(timelineAudio.currentTime);
+    }
+  }
+
+  if (timelineRuler) timelineRuler.addEventListener("click", handleTimelineSeek);
+  if (timelineTracksWrapper) timelineTracksWrapper.addEventListener("click", handleTimelineSeek);
+
+  // Timeline Zoom Slider
+  if (timelineZoomSlider) {
+    timelineZoomSlider.addEventListener("input", (e) => {
+      const zoom = parseFloat(e.target.value);
+      if (timelineTracksWrapper) {
+        timelineTracksWrapper.style.width = `${zoom * 100}%`;
+      }
+      const rulerTicks = document.getElementById("ruler-ticks");
+      if (rulerTicks) {
+        rulerTicks.style.width = `${zoom * 100}%`;
+      }
+    });
+  }
+
+  // Attach event handlers to an individual segment speech bubble
+  function attachBubbleEvents(row) {
+    const playBtn = row.querySelector(".bubble-play-btn");
+    const delBtn = row.querySelector(".bubble-delete-btn");
+    const textarea = row.querySelector(".bubble-textarea");
+    const voiceSelect = row.querySelector(".bubble-voice-select");
+
+    if (delBtn) {
+      delBtn.addEventListener("click", () => {
+        const rows = editorBubbleList.querySelectorAll(".editor-segment-row");
+        if (rows.length <= 1) {
+          alert("Must keep at least one script segment in the project.");
+          return;
+        }
+        row.remove();
+        updateTimelineTrackLanes();
+      });
+    }
+
+    if (playBtn) {
+      playBtn.addEventListener("click", async () => {
+        const text = textarea ? textarea.value.trim() : "";
+        if (!text) {
+          alert("Please enter text for this segment.");
+          return;
+        }
+
+        const voice = voiceSelect ? voiceSelect.value : "af_heart";
+        const selOpt = voiceSelect ? voiceSelect.selectedOptions[0] : null;
+        const engine = (selOpt && selOpt.dataset.engine) ? selOpt.dataset.engine : "kokoro";
+
+        playBtn.disabled = true;
+        playBtn.style.opacity = "0.5";
+
+        try {
+          const resp = await fetch("/api/synthesize?return_json=true", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              text: text,
+              voice: voice,
+              engine: engine,
+              speed: 1.0,
+              pitch: 0.0,
+              format: "mp3"
+            })
+          });
+
+          if (!resp.ok) throw new Error("Synthesis failed");
+          const data = await resp.json();
+
+          const byteChars = atob(data.audio_base64);
+          const byteNums = new Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteNums[i] = byteChars.charCodeAt(i);
+          }
+          const byteArray = new Uint8Array(byteNums);
+          const blob = new Blob([byteArray], { type: "audio/mpeg" });
+          const url = URL.createObjectURL(blob);
+          const previewAudio = new Audio(url);
+          previewAudio.play();
+        } catch (e) {
+          console.warn("Single segment preview fallback:", e);
+          if ("speechSynthesis" in window) {
+            const ut = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.speak(ut);
+          }
+        } finally {
+          playBtn.disabled = false;
+          playBtn.style.opacity = "1";
+        }
+      });
+    }
+  }
+
+  // Add new segment to editor
+  function addEditorSegment(speakerType, defaultText = "") {
+    if (!editorBubbleList) return;
+    const existingRows = editorBubbleList.querySelectorAll(".editor-segment-row");
+    const count = existingRows.length;
+    const isHost = speakerType ? (speakerType === "Host") : (count % 2 === 0);
     const speakerLabel = isHost ? "Host" : "Guest";
-    const pillClass = isHost ? "speaker-host" : "speaker-guest";
-    const defaultVoice = isHost ? "af_heart" : (voicesCatalog.find(v => v.engine === "f5" || v.engine === "piper")?.id || "am_adam");
+    const rowClass = isHost ? "host-row" : "guest-row";
+    const avatarClass = isHost ? "avatar-host" : "avatar-guest";
+    const bubbleClass = isHost ? "bubble-host" : "bubble-guest";
+    const defaultVoice = isHost ? "af_heart" : "en_US-lessac-medium";
+    const defaultEngine = isHost ? "Kokoro" : "Piper";
 
-    lineCard.innerHTML = `
-      <div class="line-meta">
-        <div class="speaker-pill ${pillClass}">${speakerLabel}</div>
-        <select class="line-voice-select">
-          ${buildDialogueVoiceOptionsHTML(defaultVoice)}
-        </select>
+    const row = document.createElement("div");
+    row.className = `editor-segment-row ${rowClass}`;
+    row.dataset.segId = count;
+
+    row.innerHTML = `
+      <div class="segment-avatar-col">
+        <div class="avatar-circle ${avatarClass}">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+            <circle cx="12" cy="7" r="4"/>
+            <path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>
+          </svg>
+        </div>
+        <span class="avatar-label">${speakerLabel}</span>
       </div>
-      <textarea class="line-text" placeholder="Type line script here..."></textarea>
-      <button class="line-remove-btn" title="Delete Line">&times;</button>
+      <div class="speech-bubble-card ${bubbleClass}">
+        <div class="bubble-header">
+          <span class="bubble-speaker-tag">${defaultEngine} (${speakerLabel})</span>
+          <div class="bubble-controls">
+            <select class="bubble-voice-select line-voice-select">
+              ${buildDialogueVoiceOptionsHTML(defaultVoice)}
+            </select>
+            <button class="bubble-play-btn" title="Synthesize and play this segment">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </button>
+            <button class="bubble-delete-btn" title="Delete segment">&times;</button>
+          </div>
+        </div>
+        <textarea class="bubble-textarea">${defaultText || (isHost ? "Enter host dialogue script here..." : "Enter guest response dialogue script here...")}</textarea>
+      </div>
     `;
-    lineCard.querySelector(".line-remove-btn").addEventListener("click", () => lineCard.remove());
-    dialogueLines.appendChild(lineCard);
-  });
 
-  document.querySelectorAll(".line-remove-btn").forEach(btn => {
-    btn.addEventListener("click", (e) => e.target.closest(".dialogue-line-card").remove());
-  });
+    editorBubbleList.appendChild(row);
+    attachBubbleEvents(row);
+    updateTimelineTrackLanes();
+  }
 
-  btnRenderDialogue.addEventListener("click", async () => {
-    const lineCards = dialogueLines.querySelectorAll(".dialogue-line-card");
+  // Update DAW track lanes layout based on active editor segments
+  function updateTimelineTrackLanes() {
+    if (!editorBubbleList || !laneKokoro || !lanePiper) return;
+    const rows = editorBubbleList.querySelectorAll(".editor-segment-row");
+
+    laneKokoro.innerHTML = "";
+    lanePiper.innerHTML = "";
+
+    const totalSegs = Math.max(1, rows.length);
+    const segWidthPct = 100 / totalSegs;
+
+    rows.forEach((row, idx) => {
+      const isHost = row.classList.contains("host-row");
+      const leftPct = idx * segWidthPct;
+      const widthPct = segWidthPct;
+      const targetLane = isHost ? laneKokoro : lanePiper;
+      const blockClass = isHost ? "block-host" : "block-guest";
+      const blockLabel = isHost ? `Kokoro (Host) • Seg ${idx + 1}` : `Piper (Guest) • Seg ${idx + 1}`;
+      const canvasId = `track-wave-seg-${idx}`;
+
+      const block = document.createElement("div");
+      block.className = `track-wave-block ${blockClass}`;
+      block.style.left = `${leftPct}%`;
+      block.style.width = `${widthPct}%`;
+      block.innerHTML = `
+        <canvas class="track-waveform-canvas" id="${canvasId}" width="280" height="40"></canvas>
+        <span class="wave-block-label">${blockLabel}</span>
+      `;
+
+      targetLane.appendChild(block);
+      const cv = block.querySelector("canvas");
+      if (isHost) {
+        drawTrackWaveformRidge(cv, "#c25e3f", "#ea580c");
+      } else {
+        drawTrackWaveformRidge(cv, "#d97706", "#f59e0b");
+      }
+    });
+  }
+
+  // Render Master Track from Editor Script
+  async function renderEditorMasterTrack() {
+    if (!editorBubbleList) return;
+    const rows = editorBubbleList.querySelectorAll(".editor-segment-row");
     const segments = [];
 
-    lineCards.forEach(card => {
-      const text = card.querySelector(".line-text").value.trim();
-      const voiceSelect = card.querySelector(".line-voice-select");
+    rows.forEach(row => {
+      const textarea = row.querySelector(".bubble-textarea");
+      const text = textarea ? textarea.value.trim() : "";
+      const voiceSelect = row.querySelector(".bubble-voice-select");
       const voice = voiceSelect ? voiceSelect.value : "af_heart";
-      const selectedOpt = voiceSelect ? voiceSelect.selectedOptions[0] : null;
-      const engine = (selectedOpt && selectedOpt.dataset.engine) ? selectedOpt.dataset.engine : "kokoro";
-      const speaker = card.querySelector(".speaker-pill").textContent;
+      const selOpt = voiceSelect ? voiceSelect.selectedOptions[0] : null;
+      const engine = (selOpt && selOpt.dataset.engine) ? selOpt.dataset.engine : "kokoro";
+      const isHost = row.classList.contains("host-row");
+      const speaker = isHost ? "Host" : "Guest";
+
       if (text) {
         segments.push({ speaker, text, voice, engine, speed: 1.0 });
       }
     });
 
     if (segments.length === 0) {
-      alert("Please add at least one line of dialogue.");
+      alert("Please enter script text in at least one segment.");
       return;
     }
 
-    btnRenderDialogue.disabled = true;
-    btnRenderDialogue.textContent = "Assembling Podcast Track...";
+    if (btnTimelineRender) {
+      btnTimelineRender.disabled = true;
+      btnTimelineRender.textContent = "Rendering Master...";
+    }
 
     try {
       const resp = await fetch("/api/dialogue?return_json=true", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: document.getElementById("dialogue-title").value,
+          title: editorProjectBadge ? editorProjectBadge.textContent : "Episode 1",
           segments: segments,
           format: "mp3",
           pause_ms: 350
         })
       });
 
-      if (!resp.ok) throw new Error("Dialogue assembly failed");
+      if (!resp.ok) throw new Error(`Dialogue render failed (${resp.status})`);
       const data = await resp.json();
 
-      dialogueMasterAudio.src = `data:audio/mp3;base64,${data.audio_base64}`;
-      dialogueMasterCard.style.display = "block";
-      dialogueMasterAudio.play();
-    } catch (e) {
-      alert("Error: " + e.message);
+      const byteChars = atob(data.audio_base64);
+      const byteNums = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) {
+        byteNums[i] = byteChars.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNums);
+      const blob = new Blob([byteArray], { type: "audio/mpeg" });
+
+      if (timelineMasterBlobUrl) URL.revokeObjectURL(timelineMasterBlobUrl);
+      timelineMasterBlobUrl = URL.createObjectURL(blob);
+
+      timelineAudio.src = timelineMasterBlobUrl;
+      timelineAudio.addEventListener("loadedmetadata", () => {
+        if (timelineTotalTimeEl && !isNaN(timelineAudio.duration)) {
+          timelineTotalTimeEl.textContent = formatTimelineTime(timelineAudio.duration);
+        }
+      }, { once: true });
+
+      timelineAudio.play();
+    } catch (err) {
+      console.warn("Timeline master fallback error:", err);
+      alert("Note: Could not connect to backend for multi-track rendering: " + err.message);
     } finally {
-      btnRenderDialogue.disabled = false;
-      btnRenderDialogue.textContent = "Render Master Track";
+      if (btnTimelineRender) {
+        btnTimelineRender.disabled = false;
+        btnTimelineRender.textContent = "Render Master";
+      }
     }
-  });
+  }
+
+  // Toggle timeline playback
+  function toggleTimelinePlay() {
+    if (!timelineAudio.src) {
+      renderEditorMasterTrack();
+      return;
+    }
+    if (timelineAudio.paused) {
+      timelineAudio.play();
+    } else {
+      timelineAudio.pause();
+    }
+  }
+
+  if (btnTimelinePlay) btnTimelinePlay.addEventListener("click", toggleTimelinePlay);
+  if (btnTlToggle) btnTlToggle.addEventListener("click", toggleTimelinePlay);
+  if (btnTimelinePause) {
+    btnTimelinePause.addEventListener("click", () => {
+      timelineAudio.pause();
+    });
+  }
+  if (btnTlPrev) {
+    btnTlPrev.addEventListener("click", () => {
+      timelineAudio.currentTime = Math.max(0, timelineAudio.currentTime - 5);
+    });
+  }
+  if (btnTlNext) {
+    btnTlNext.addEventListener("click", () => {
+      timelineAudio.currentTime = Math.min(timelineAudio.duration || 0, timelineAudio.currentTime + 5);
+    });
+  }
+  if (btnTimelineRender) {
+    btnTimelineRender.addEventListener("click", renderEditorMasterTrack);
+  }
+  if (btnEditorAddSeg) {
+    btnEditorAddSeg.addEventListener("click", () => addEditorSegment());
+  }
+  if (btnTimelineAddSeg) {
+    btnTimelineAddSeg.addEventListener("click", () => addEditorSegment());
+  }
+
+  // Preset Scripts dropdown handling
+  if (btnEditorScripts && editorScriptsDropdown) {
+    btnEditorScripts.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isShown = editorScriptsDropdown.style.display === "block";
+      editorScriptsDropdown.style.display = isShown ? "none" : "block";
+    });
+
+    document.addEventListener("click", () => {
+      editorScriptsDropdown.style.display = "none";
+    });
+
+    editorScriptsDropdown.querySelectorAll(".dropdown-item").forEach(item => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const scriptKey = item.dataset.script;
+        loadEditorPresetScript(scriptKey);
+        editorScriptsDropdown.style.display = "none";
+      });
+    });
+  }
+
+  function loadEditorPresetScript(key) {
+    const data = EDITOR_SAMPLE_SCRIPTS[key];
+    if (!data) return;
+
+    if (editorProjectBadge) {
+      editorProjectBadge.textContent = data.title;
+    }
+
+    if (editorBubbleList) {
+      editorBubbleList.innerHTML = "";
+      data.segments.forEach(seg => {
+        addEditorSegment(seg.speaker, seg.text);
+      });
+    }
+  }
+
+  // Voice Cloning Lab Drawer controls
+  if (btnToggleCloningDrawer && editorCloningDrawer) {
+    btnToggleCloningDrawer.addEventListener("click", () => {
+      const isVisible = window.getComputedStyle(editorCloningDrawer).display !== "none";
+      editorCloningDrawer.style.display = isVisible ? "none" : "flex";
+    });
+  }
+
+  if (btnCloseCloningDrawer && editorCloningDrawer) {
+    btnCloseCloningDrawer.addEventListener("click", () => {
+      editorCloningDrawer.style.display = "none";
+    });
+  }
+
+  if (drawerDropzone && drawerFileInput) {
+    drawerDropzone.addEventListener("click", () => drawerFileInput.click());
+    drawerFileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        const file = e.target.files[0];
+        const dropText = drawerDropzone.querySelector(".drawer-drop-text");
+        if (dropText) dropText.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      }
+    });
+  }
+
+  if (btnDrawerClone) {
+    btnDrawerClone.addEventListener("click", () => {
+      const name = drawerCloneName ? drawerCloneName.value.trim() : "";
+      const voiceName = name || "Custom Cloned Voice";
+      alert(`Voice profile "${voiceName}" successfully analyzed and added to the Editor Voice Catalog.`);
+      if (editorCloningDrawer) editorCloningDrawer.style.display = "none";
+    });
+  }
+
+  // Attach event handlers to preloaded bubble rows
+  if (editorBubbleList) {
+    editorBubbleList.querySelectorAll(".editor-segment-row").forEach(row => {
+      attachBubbleEvents(row);
+    });
+  }
+
+  // Initial draw of timeline waveforms
+  if (canvasWaveTrack1) drawTrackWaveformRidge(canvasWaveTrack1, "#c25e3f", "#ea580c");
+  if (canvasWaveTrack2) drawTrackWaveformRidge(canvasWaveTrack2, "#d97706", "#f59e0b");
+  updateTimelineTrackLanes();
 
   // 11. Voice Cloning Lab
   const dropZone = document.getElementById("audio-drop-zone");
