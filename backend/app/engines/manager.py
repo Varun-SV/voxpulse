@@ -55,17 +55,15 @@ class EngineManager:
     async def synthesize(self, req: SynthesizeRequest) -> tuple[bytes, float]:
         """Synthesizes audio and returns (audio_bytes, latency_ms)."""
         engine = self.get_engine(req.engine)
-        
-        # If voice provided, verify or match
         voice_id = req.voice or "af_heart"
         
-        # Process script for director notes / stage directions [Deep], [Speaking slowly], etc.
+        # Segment script into acoustic beats based on director notes ([Deep], [Speaking slowly], etc.)
         from backend.app.services.text_preprocessor import TextPreprocessor
-        clean_text, speed, pitch, emotion = TextPreprocessor.process_script(
+        beats = TextPreprocessor.segment_into_beats(
             text=req.text,
-            current_speed=req.speed,
-            current_pitch=req.pitch,
-            current_emotion=req.emotion
+            default_speed=req.speed,
+            default_pitch=req.pitch,
+            default_emotion=req.emotion
         )
 
         # Decode reference audio if cloning sample provided
@@ -77,15 +75,41 @@ class EngineManager:
                 ref_bytes = None
 
         start_time = time.perf_counter()
-        audio_data = await engine.synthesize(
-            text=clean_text,
-            voice=voice_id,
-            speed=speed,
-            pitch=pitch,
-            format=req.format,
-            reference_audio=ref_bytes,
-            emotion=emotion
-        )
+
+        # If single beat, synthesize directly
+        if len(beats) <= 1:
+            beat = beats[0] if beats else {
+                "text": req.text, "speed": req.speed, "pitch": req.pitch, "emotion": req.emotion
+            }
+            audio_data = await engine.synthesize(
+                text=beat["text"],
+                voice=voice_id,
+                speed=beat["speed"],
+                pitch=beat["pitch"],
+                format=req.format,
+                reference_audio=ref_bytes,
+                emotion=beat["emotion"]
+            )
+        else:
+            # Multi-beat cinematic script assembly
+            master_bytes = bytearray()
+            # MP3 silence padding frame (~150ms)
+            silence_frame = b"\xff\xfb\x90d\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00" * 8
+            for i, beat in enumerate(beats):
+                chunk = await engine.synthesize(
+                    text=beat["text"],
+                    voice=voice_id,
+                    speed=beat["speed"],
+                    pitch=beat["pitch"],
+                    format=req.format,
+                    reference_audio=ref_bytes,
+                    emotion=beat["emotion"]
+                )
+                master_bytes.extend(chunk)
+                if i < len(beats) - 1 and beat.get("pause_ms", 0) > 0:
+                    master_bytes.extend(silence_frame * (beat["pause_ms"] // 100))
+            audio_data = bytes(master_bytes)
+
         latency_ms = (time.perf_counter() - start_time) * 1000.0
         return audio_data, latency_ms
 

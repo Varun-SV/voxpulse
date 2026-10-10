@@ -14,6 +14,9 @@ services:
       - DEFAULT_ENGINE=kokoro
       - DEFAULT_VOICE=af_heart
     volumes:
+      - ./backend:/app/backend
+      - ./frontend:/app/frontend
+      - ./assets:/app/assets
       - voxpulse-storage:/app/storage
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
